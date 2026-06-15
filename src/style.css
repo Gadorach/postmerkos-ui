@@ -526,3 +526,118 @@ dialog.config-preview textarea {
 .diff-foreground {
 	color: #bf616a;
 }
+/* Management network */
+.network-panel {
+	max-width: 900px;
+	margin: 0 auto 1.5rem;
+	padding: 1rem;
+	background: var(--bg);
+	border: 1px solid var(--border);
+	border-radius: 8px;
+}
+.network-heading { display: flex; align-items: center; gap: 1rem; }
+.network-heading h2 { margin: 0; }
+.network-state { margin-left: auto; padding: 0.2rem 0.6rem; border: 1px solid var(--border); border-radius: 999px; }
+.network-state-bound, .network-state-applied { color: #a3be8c; }
+.network-state-error { color: #bf616a; }
+.network-state-waiting, .network-state-renewing, .network-state-applying { color: #ebcb8b; }
+.network-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem; margin-top: 1rem; }
+.network-grid label { display: grid; gap: 0.3rem; font-size: 0.9rem; }
+.network-runtime { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.5rem; margin: 1rem 0 0; }
+.network-runtime div { background: var(--bg-alt); border-radius: 6px; padding: 0.5rem; }
+.network-runtime dt { color: var(--text-muted); font-size: 0.8rem; }
+.network-runtime dd { margin: 0.15rem 0 0; overflow-wrap: anywhere; }
+.network-note { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0; }
+.notice { color: #a3be8c; padding: 0.5rem 0; }
+.warning { color: #ebcb8b; padding: 0.35rem 0; }
+.connection-state { display: inline-block; margin-top: 0.4rem; font-size: 0.85rem; }
+.connection-state.connected { color: #a3be8c; }
+.connection-state.disconnected { color: #bf616a; }
+.device-summary { margin-top: 0.5rem; }
+
+/* Management network */
+main {
+	max-width: 1500px;
+	margin: 0 auto;
+}
+
+.network-panel {
+	max-width: 900px;
+	margin: 0 auto 1.5rem;
+	padding: 1rem;
+	background: var(--bg);
+	border: 1px solid var(--border);
+	border-radius: 8px;
+}
+
+.network-heading,
+.device-status {
+	display: flex;
+	align-items: center;
+	gap: 1rem;
+	flex-wrap: wrap;
+}
+
+.network-heading h2 {
+	margin: 0;
+	font-size: 1.2rem;
+}
+
+.network-state {
+	padding: 0.15rem 0.5rem;
+	border: 1px solid var(--border);
+	border-radius: 999px;
+	font-size: 0.85rem;
+}
+
+.network-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+	gap: 0.75rem;
+	margin-top: 1rem;
+}
+
+.network-grid label {
+	display: grid;
+	gap: 0.25rem;
+}
+
+.network-grid input,
+.network-grid select {
+	width: 100%;
+	box-sizing: border-box;
+}
+
+.network-runtime {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+	gap: 0.5rem;
+	margin: 1rem 0 0;
+}
+
+.network-runtime div {
+	padding: 0.5rem;
+	background: var(--bg-alt);
+	border-radius: 4px;
+}
+
+.network-runtime dt {
+	font-size: 0.8rem;
+	color: var(--text-muted);
+}
+
+.network-runtime dd {
+	margin: 0;
+	word-break: break-word;
+}
+
+.network-note,
+.warning,
+.notice {
+	padding: 0.5rem 0;
+}
+
+.warning { color: #d08770; }
+.notice { color: #a3be8c; }
+.connected { color: #a3be8c; }
+.disconnected { color: #bf616a; }

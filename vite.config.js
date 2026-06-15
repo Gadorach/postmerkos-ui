@@ -58,12 +58,29 @@ function wsPlugin() {
 						}
 					}, 3000);
 
-					ws.on('message', (raw) => {
-						const msg = JSON.parse(raw);
-						if (msg.type === 'config') {
-							// Echo back as acknowledgement
-							ws.send(JSON.stringify({ type: 'config', data: msg.data }));
+					const merge = (target, delta) => {
+						for (const [key, value] of Object.entries(delta)) {
+							if (value === null) delete target[key];
+							else if (value && typeof value === 'object' && !Array.isArray(value)) {
+								target[key] = merge({ ...(target[key] ?? {}) }, value);
+							} else target[key] = value;
 						}
+						return target;
+					};
+
+					ws.on('message', (raw) => {
+						let msg;
+						try { msg = JSON.parse(raw); } catch {
+							ws.send(JSON.stringify({ type: 'error', data: { status: 400, message: 'Bad Request' } }));
+							return;
+						}
+						if (msg.type === 'get_config') ws.send(JSON.stringify({ id: msg.id, type: 'config', data: configData }));
+						else if (msg.type === 'get_status') ws.send(JSON.stringify({ id: msg.id, type: 'status', data: statusData }));
+						else if (msg.type === 'config' && msg.data && typeof msg.data === 'object') {
+							merge(configData, msg.data);
+							ws.send(JSON.stringify({ id: msg.id, type: 'ack', data: { message: 'Configuration accepted', applied: 1, warnings: [] } }));
+							ws.send(JSON.stringify({ type: 'config', data: configData }));
+						} else ws.send(JSON.stringify({ id: msg.id, type: 'error', data: { status: 400, message: 'Bad Request' } }));
 					});
 
 					ws.on('close', () => clearInterval(interval));

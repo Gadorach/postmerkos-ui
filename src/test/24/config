@@ -1,6 +1,5 @@
 {
   "stp": {
-    "enabled": true,
     "priority": 32768,
     "hello_time": 2,
     "forward_delay": 15,
@@ -32,7 +31,10 @@
         "enabled": true,
         "mode": "at"
       },
-      "storm_control": true
+      "storm_control": true,
+      "speed": "auto",
+      "flow_control": false,
+      "eee": true
     },
     "2": {
       "enabled": true,
@@ -54,7 +56,11 @@
         "enabled": true,
         "mode": "at"
       },
-      "storm_control": true
+      "storm_control": true,
+      "name": "",
+      "speed": "auto",
+      "flow_control": false,
+      "eee": true
     },
     "3": {
       "enabled": true,
@@ -76,7 +82,11 @@
         "enabled": true,
         "mode": "at"
       },
-      "storm_control": true
+      "storm_control": true,
+      "name": "",
+      "speed": "auto",
+      "flow_control": false,
+      "eee": true
     },
     "4": {
       "enabled": true,
@@ -98,7 +108,11 @@
         "enabled": true,
         "mode": "at"
       },
-      "storm_control": false
+      "storm_control": false,
+      "name": "",
+      "speed": "auto",
+      "flow_control": false,
+      "eee": true
     },
     "5": {
       "enabled": true,
@@ -120,7 +134,11 @@
         "enabled": true,
         "mode": "at"
       },
-      "storm_control": true
+      "storm_control": true,
+      "name": "",
+      "speed": "auto",
+      "flow_control": false,
+      "eee": true
     },
     "6": {
       "enabled": true,
@@ -143,7 +161,10 @@
         "enabled": true,
         "mode": "at"
       },
-      "storm_control": true
+      "storm_control": true,
+      "speed": "auto",
+      "flow_control": false,
+      "eee": true
     },
     "7": {
       "enabled": true,
@@ -165,7 +186,11 @@
         "enabled": true,
         "mode": "at"
       },
-      "storm_control": true
+      "storm_control": true,
+      "name": "",
+      "speed": "auto",
+      "flow_control": false,
+      "eee": true
     },
     "8": {
       "enabled": true,
@@ -188,7 +213,10 @@
         "enabled": true,
         "mode": "at"
       },
-      "storm_control": true
+      "storm_control": true,
+      "speed": "auto",
+      "flow_control": false,
+      "eee": true
     },
     "9": {
       "enabled": true,
@@ -210,7 +238,11 @@
         "enabled": true,
         "mode": "at"
       },
-      "storm_control": true
+      "storm_control": true,
+      "name": "",
+      "speed": "auto",
+      "flow_control": false,
+      "eee": true
     },
     "10": {
       "enabled": true,
@@ -232,7 +264,11 @@
         "enabled": true,
         "mode": "at"
       },
-      "storm_control": false
+      "storm_control": false,
+      "name": "",
+      "speed": "auto",
+      "flow_control": false,
+      "eee": true
     },
     "11": {
       "enabled": true,
@@ -254,7 +290,11 @@
         "enabled": true,
         "mode": "at"
       },
-      "storm_control": true
+      "storm_control": true,
+      "name": "",
+      "speed": "auto",
+      "flow_control": false,
+      "eee": true
     },
     "12": {
       "enabled": true,
@@ -276,7 +316,11 @@
         "enabled": true,
         "mode": "at"
       },
-      "storm_control": true
+      "storm_control": true,
+      "name": "",
+      "speed": "auto",
+      "flow_control": false,
+      "eee": true
     },
     "13": {
       "enabled": true,
@@ -298,7 +342,11 @@
         "enabled": true,
         "mode": "at"
       },
-      "storm_control": true
+      "storm_control": true,
+      "name": "",
+      "speed": "auto",
+      "flow_control": false,
+      "eee": true
     },
     "14": {
       "enabled": true,
@@ -320,7 +368,11 @@
         "enabled": true,
         "mode": "at"
       },
-      "storm_control": true
+      "storm_control": true,
+      "name": "",
+      "speed": "auto",
+      "flow_control": false,
+      "eee": true
     },
     "15": {
       "enabled": true,
@@ -342,7 +394,11 @@
         "enabled": true,
         "mode": "at"
       },
-      "storm_control": true
+      "storm_control": true,
+      "name": "",
+      "speed": "auto",
+      "flow_control": false,
+      "eee": true
     },
     "16": {
       "enabled": true,
@@ -364,7 +420,11 @@
         "enabled": true,
         "mode": "at"
       },
-      "storm_control": false
+      "storm_control": false,
+      "name": "",
+      "speed": "auto",
+      "flow_control": false,
+      "eee": true
     },
     "17": {
       "enabled": true,
@@ -386,7 +446,11 @@
         "enabled": true,
         "mode": "at"
       },
-      "storm_control": true
+      "storm_control": true,
+      "name": "",
+      "speed": "auto",
+      "flow_control": false,
+      "eee": true
     },
     "18": {
       "enabled": true,
@@ -408,7 +472,11 @@
         "enabled": true,
         "mode": "at"
       },
-      "storm_control": true
+      "storm_control": true,
+      "name": "",
+      "speed": "auto",
+      "flow_control": false,
+      "eee": true
     },
     "19": {
       "enabled": true,
@@ -430,7 +498,11 @@
         "enabled": true,
         "mode": "at"
       },
-      "storm_control": true
+      "storm_control": true,
+      "name": "",
+      "speed": "auto",
+      "flow_control": false,
+      "eee": true
     },
     "20": {
       "enabled": true,
@@ -452,7 +524,11 @@
         "enabled": true,
         "mode": "at"
       },
-      "storm_control": true
+      "storm_control": true,
+      "name": "",
+      "speed": "auto",
+      "flow_control": false,
+      "eee": true
     },
     "21": {
       "enabled": true,
@@ -474,7 +550,11 @@
         "enabled": true,
         "mode": "at"
       },
-      "storm_control": true
+      "storm_control": true,
+      "name": "",
+      "speed": "auto",
+      "flow_control": false,
+      "eee": true
     },
     "22": {
       "enabled": true,
@@ -496,7 +576,11 @@
         "enabled": true,
         "mode": "at"
       },
-      "storm_control": true
+      "storm_control": true,
+      "name": "",
+      "speed": "auto",
+      "flow_control": false,
+      "eee": true
     },
     "23": {
       "enabled": true,
@@ -518,7 +602,11 @@
         "enabled": true,
         "mode": "at"
       },
-      "storm_control": true
+      "storm_control": true,
+      "name": "",
+      "speed": "auto",
+      "flow_control": false,
+      "eee": true
     },
     "24": {
       "enabled": true,
@@ -540,7 +628,11 @@
         "enabled": true,
         "mode": "at"
       },
-      "storm_control": true
+      "storm_control": true,
+      "name": "",
+      "speed": "auto",
+      "flow_control": false,
+      "eee": true
     },
     "25": {
       "enabled": true,
@@ -558,11 +650,11 @@
         "edge": false,
         "auto_edge": true
       },
-      "poe": {
-        "enabled": true,
-        "mode": "Unknown"
-      },
-      "storm_control": true
+      "storm_control": true,
+      "name": "",
+      "speed": "auto",
+      "flow_control": false,
+      "eee": true
     },
     "26": {
       "enabled": true,
@@ -580,11 +672,11 @@
         "edge": false,
         "auto_edge": true
       },
-      "poe": {
-        "enabled": true,
-        "mode": "Unknown"
-      },
-      "storm_control": true
+      "storm_control": true,
+      "name": "",
+      "speed": "auto",
+      "flow_control": false,
+      "eee": true
     },
     "27": {
       "enabled": true,
@@ -602,11 +694,11 @@
         "edge": false,
         "auto_edge": true
       },
-      "poe": {
-        "enabled": true,
-        "mode": "Unknown"
-      },
-      "storm_control": true
+      "storm_control": true,
+      "name": "",
+      "speed": "auto",
+      "flow_control": false,
+      "eee": true
     },
     "28": {
       "enabled": true,
@@ -624,11 +716,24 @@
         "edge": false,
         "auto_edge": true
       },
-      "poe": {
-        "enabled": true,
-        "mode": "Unknown"
-      },
-      "storm_control": true
+      "storm_control": true,
+      "name": "",
+      "speed": "auto",
+      "flow_control": false,
+      "eee": true
     }
+  },
+  "network": {
+    "ipv4": {
+      "mode": "dhcp",
+      "fallback_address": "169.254.0.10/16",
+      "mtu": 1500
+    }
+  },
+  "multicast": {
+    "igmp_snooping": true,
+    "igmp_querier_interval": 125,
+    "mld_snooping": true,
+    "mld_querier_interval": 125
   }
 }

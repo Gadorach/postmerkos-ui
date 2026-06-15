@@ -1,46 +1,48 @@
-# postmerkOS UI
+# postmerkos-ui
 
-A basic web interface for [meraki-builder](https://github.com/halmartin/meraki-builder) firmware.
+A small Preact interface for the postmerkOS `configd` JSON protocol. The UI is a client only: validation, persistence, capability detection, and hardware application remain in `configd`, so the same operations are available to CLI tools and scripts.
 
-![screenshot](./screenshot.png)
+## Features
 
-## Installation
+- management IPv4 DHCP/static configuration and live lease status;
+- per-port link, PHY, VLAN, STP, storm-control, and PoE desired state;
+- PoE controls only on capabilities reported by `configd`;
+- strict `af`/`at` mode with a separate enabled flag;
+- explicit request IDs, acknowledgements, warning display, and `Bad Request` handling;
+- automatic reconnection and status/config broadcasts.
 
-> **NOTE**: the [`configd`](https://github.com/halmartin/meraki-builder/pull/29)
-daemon must currently be manually started (and, given the alpha nature of this
-program, it's not recommended to automate it at boot)
+## Development
 
-1. Download [the latest release](https://github.com/hall/postmerkos-ui/releases).
+```sh
+npm ci
+npm run dev
+```
 
-    ```bash
-    wget https://github.com/hall/postmerkos-ui/releases/latest/download/postmerkos-ui.zip 
-    ```
+The Vite mock server serves `src/test/24` when `SWITCH_HOST` is unset. To proxy a real switch:
 
-2. Move it onto your switch
+```sh
+SWITCH_HOST=192.168.1.20 npm run dev
+```
 
-    ```bash
-    scp -O postmerkos-ui.zip <switch>:
-    ```
+Production checks:
 
-3. Unzip and update the permissions
+```sh
+npm run lint
+npm run build
+```
 
-    ```bash
-    unzip postmerkos-ui.zip
+The production build connects to `ws://<current-host>:4001`.
 
-    chmod o+r -R ./postmerkos-ui
-    chmod o+x -R ./postmerkos-ui/cgi-bin
-    ```
+## Protocol
 
-4. Start `uhttpd` on port 80
+```json
+{"id":"1","type":"get_config"}
+{"id":"2","type":"get_status"}
+{"id":"3","type":"config","data":{"ports":{"1":{"poe":{"enabled":true,"mode":"at"}}}}}
+```
 
-    ```bash
-    uhttpd -p 80 -h ./postmerkos-ui
-    ```
+The browser waits for an explicit `ack` or `error`; it does not treat an unsolicited configuration broadcast as an acknowledgement. A management-address update can close the current socket after acknowledgement, after which the user reconnects at the new address.
 
-5. Open http://$switch in your browser and use your PAM login credentials.
+## Modules
 
-
-## Credits
-
-- original implementation by WriteCodeEveryday at https://github.com/WriteCodeEveryday/freeraki-ui
-- icons by https://github.com/danklammer/bytesize-icons
+See [`docs/modules`](docs/modules/README.md).

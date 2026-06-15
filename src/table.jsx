@@ -133,7 +133,9 @@ export default function Table({ ports, status, poe, updatePort, updatePortMulti,
 						let p = { ...ports[port], ...status?.ports?.[port] };
 						let enabled = p.enabled ?? true;
 						let established = p.link?.established;
-						let poeMode = p.poe?.mode;
+						let poeMode = p.poe?.mode ?? 'at';
+						let poeEnabled = p.poe?.enabled ?? false;
+						let poeCapable = status?.ports?.[port]?.capabilities?.poe ?? Boolean(p.poe);
 						let vlanMode = p.vlan?.mode ?? 'access';
 						let isAccess = vlanMode === 'access';
 						let vlansValue = isAccess ? (p.vlan?.pvid ?? '') : (p.vlan?.allowed ?? '');
@@ -161,23 +163,18 @@ export default function Table({ ports, status, poe, updatePort, updatePortMulti,
 								{/* port section */}
 								{sections.port ? (<>
 									<td>{p.link?.speed}</td>
-									{poe && <td>{status?.ports?.[port]?.poe?.power?.toFixed(2)}</td>}
-									{poe &&
-										<td className={diffStyle(port, "poe.mode")}>
-											<span className="toggle">
-												{[['at', 'high'], ['af', 'low']].map(([mode, label]) => (
-													<button
-														key={mode}
-														className={poeMode === mode ? 'active' : ''}
-														title={mode === 'at' ? '802.3at (30W)' : '802.3af (15.4W)'}
-														onClick={() => updatePort(port, 'poe.mode', poeMode === mode ? 'disable' : mode)}
-													>
-														{label}
-													</button>
-												))}
-											</span>
-										</td>
-									}
+									{poe && <td>{poeCapable ? (status?.ports?.[port]?.poe?.power?.toFixed(2) ?? '—') : '—'}</td>}
+									{poe && <td className={`${diffStyle(port, "poe.enabled") ?? ''} ${diffStyle(port, "poe.mode") ?? ''}`}>
+										{poeCapable ? <span className="toggle">
+											<button className={!poeEnabled ? 'active' : ''} title="Disable PoE"
+												onClick={() => updatePort(port, 'poe.enabled', false)}>off</button>
+											{[['af', 'af'], ['at', 'at']].map(([mode, label]) => (
+												<button key={mode} className={poeEnabled && poeMode === mode ? 'active' : ''}
+													title={mode === 'at' ? 'Enable 802.3at mode' : 'Enable 802.3af mode'}
+													onClick={() => updatePortMulti(port, { 'poe.enabled': true, 'poe.mode': mode })}>{label}</button>
+											))}
+										</span> : '—'}
+									</td>}
 									<td className={diffStyle(port, 'storm_control')}>
 										<span className="toggle">
 											<button

@@ -1,123 +1,223 @@
 {
-    "datetime": "2020-12-05T13:24:05Z",
-    "device": "MS220-8P",
-    "temperature": {
-        "cpu": [
-            36.1
-        ],
-        "poe": [
-            29.8
-        ]
+  "datetime": "2020-12-05T13:24:05Z",
+  "device": "MS220-8P",
+  "temperature": {
+    "cpu": [
+      36.1
+    ],
+    "poe": [
+      29.8
+    ]
+  },
+  "stp": {
+    "root_bridge": true,
+    "root_id": "8000.11:22:33:44:55:01",
+    "bridge_id": "8000.11:22:33:44:55:01"
+  },
+  "lldp": {
+    "1": {
+      "system_name": "gateway",
+      "port_id": "ge-0/0/0"
     },
-    "stp": {
-        "root_bridge": true,
-        "root_id": "8000.11:22:33:44:55:01",
-        "bridge_id": "8000.11:22:33:44:55:01"
-    },
-    "lldp": {
-        "1": { "system_name": "gateway", "port_id": "ge-0/0/0" },
-        "2": { "system_name": "ip-phone-lobby", "port_id": "eth0" }
-    },
-    "ports": {
-        "1": {
-            "link": {
-                "established": true,
-                "speed": 1000
-            },
-            "stp": { "state": "forwarding", "role": "root" },
-            "poe": {
-                "power": 100
-            }
-        },
-        "2": {
-            "link": {
-                "established": true,
-                "speed": 100
-            },
-            "stp": { "state": "forwarding", "role": "designated" },
-            "poe": {
-                "power": 0
-            }
-        },
-        "3": {
-            "link": {
-                "established": false,
-                "speed": 0
-            },
-            "stp": { "state": "disabled", "role": "disabled" },
-            "poe": {
-                "power": 0
-            }
-        },
-        "4": {
-            "link": {
-                "established": false,
-                "speed": 0
-            },
-            "stp": { "state": "blocking", "role": "alternate" },
-            "poe": {
-                "power": 0
-            }
-        },
-        "5": {
-            "link": {
-                "established": false,
-                "speed": 0
-            },
-            "stp": { "state": "disabled", "role": "disabled" },
-            "poe": {
-                "power": 0
-            }
-        },
-        "6": {
-            "link": {
-                "established": false,
-                "speed": 0
-            },
-            "stp": { "state": "disabled", "role": "disabled" },
-            "poe": {
-                "power": 0
-            }
-        },
-        "7": {
-            "link": {
-                "established": false,
-                "speed": 0
-            },
-            "stp": { "state": "disabled", "role": "disabled" },
-            "poe": {
-                "power": 0
-            }
-        },
-        "8": {
-            "link": {
-                "established": false,
-                "speed": 0
-            },
-            "stp": { "state": "disabled", "role": "disabled" },
-            "poe": {
-                "power": 0
-            }
-        },
-        "9": {
-            "link": {
-                "established": false,
-                "speed": 0
-            },
-            "stp": { "state": "disabled", "role": "disabled" },
-            "poe": {
-                "power": 0
-            }
-        },
-        "10": {
-            "link": {
-                "established": false,
-                "speed": 0
-            },
-            "stp": { "state": "disabled", "role": "disabled" },
-            "poe": {
-                "power": 0
-            }
-        }
+    "2": {
+      "system_name": "ip-phone-lobby",
+      "port_id": "eth0"
     }
+  },
+  "ports": {
+    "1": {
+      "link": {
+        "established": true,
+        "speed": 1000
+      },
+      "stp": {
+        "state": "forwarding",
+        "role": "root"
+      },
+      "poe": {
+        "power": 100,
+        "available": true
+      },
+      "capabilities": {
+        "poe": true
+      }
+    },
+    "2": {
+      "link": {
+        "established": true,
+        "speed": 100
+      },
+      "stp": {
+        "state": "forwarding",
+        "role": "designated"
+      },
+      "poe": {
+        "power": 0,
+        "available": true
+      },
+      "capabilities": {
+        "poe": true
+      }
+    },
+    "3": {
+      "link": {
+        "established": false,
+        "speed": 0
+      },
+      "stp": {
+        "state": "disabled",
+        "role": "disabled"
+      },
+      "poe": {
+        "power": 0,
+        "available": true
+      },
+      "capabilities": {
+        "poe": true
+      }
+    },
+    "4": {
+      "link": {
+        "established": false,
+        "speed": 0
+      },
+      "stp": {
+        "state": "blocking",
+        "role": "alternate"
+      },
+      "poe": {
+        "power": 0,
+        "available": true
+      },
+      "capabilities": {
+        "poe": true
+      }
+    },
+    "5": {
+      "link": {
+        "established": false,
+        "speed": 0
+      },
+      "stp": {
+        "state": "disabled",
+        "role": "disabled"
+      },
+      "poe": {
+        "power": 0,
+        "available": true
+      },
+      "capabilities": {
+        "poe": true
+      }
+    },
+    "6": {
+      "link": {
+        "established": false,
+        "speed": 0
+      },
+      "stp": {
+        "state": "disabled",
+        "role": "disabled"
+      },
+      "poe": {
+        "power": 0,
+        "available": true
+      },
+      "capabilities": {
+        "poe": true
+      }
+    },
+    "7": {
+      "link": {
+        "established": false,
+        "speed": 0
+      },
+      "stp": {
+        "state": "disabled",
+        "role": "disabled"
+      },
+      "poe": {
+        "power": 0,
+        "available": true
+      },
+      "capabilities": {
+        "poe": true
+      }
+    },
+    "8": {
+      "link": {
+        "established": false,
+        "speed": 0
+      },
+      "stp": {
+        "state": "disabled",
+        "role": "disabled"
+      },
+      "poe": {
+        "power": 0,
+        "available": true
+      },
+      "capabilities": {
+        "poe": true
+      }
+    },
+    "9": {
+      "link": {
+        "established": false,
+        "speed": 0
+      },
+      "stp": {
+        "state": "disabled",
+        "role": "disabled"
+      },
+      "capabilities": {
+        "poe": false
+      }
+    },
+    "10": {
+      "link": {
+        "established": false,
+        "speed": 0
+      },
+      "stp": {
+        "state": "disabled",
+        "role": "disabled"
+      },
+      "capabilities": {
+        "poe": false
+      }
+    }
+  },
+  "capabilities": {
+    "port_count": 10,
+    "poe": {
+      "supported": true,
+      "available": true,
+      "ports": 8,
+      "controllers": 1,
+      "modes": [
+        "af",
+        "at"
+      ]
+    }
+  },
+  "network": {
+    "ipv4": {
+      "configured_mode": "dhcp",
+      "source": "dhcp",
+      "state": "bound",
+      "address": "192.168.1.25/24",
+      "gateway": "192.168.1.1",
+      "broadcast": "192.168.1.255",
+      "mtu": 1500,
+      "dns": [
+        "192.168.1.1"
+      ],
+      "renew_in": 1800,
+      "expires_in": 3600,
+      "last_change": 0,
+      "last_error": null
+    }
+  },
+  "errors": []
 }

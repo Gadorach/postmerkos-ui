@@ -95,3 +95,7 @@ A reduction in final zip size from `250 KB` to `72.2 KB`.
 ### Changed
 
 - Grey-out rows of ports which aren't established
+
+## Build portability fix
+
+- Replaced an accidentally committed internal npm mirror URL for `crypto-js` with the public `registry.npmjs.org` tarball URL.

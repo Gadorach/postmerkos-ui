@@ -12,8 +12,6 @@ export default [
 				document: 'readonly',
 				structuredClone: 'readonly',
 				WebSocket: 'readonly',
-				TextEncoder: 'readonly',
-				TextDecoder: 'readonly',
 				Blob: 'readonly',
 				URL: 'readonly',
 				requestAnimationFrame: 'readonly',

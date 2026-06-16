@@ -22,18 +22,13 @@ export default function Port({ number, port, poe, selected, onSelect }) {
 	if (speed) className += ` speed-${speed}`;
 	if (!enabled) className += ' disabled';
 	if (selected) className += ' selected';
-
 	const select = () => onSelect?.(String(number));
 	return (
-		<div className={className} title={formatPortTooltip(number, port, poe)}
-			role="button" tabIndex="0" aria-label={`Edit port ${number}`}
-			onClick={select} onKeyDown={event => {
-				if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); select(); }
-			}}>
+		<div className={className} title={formatPortTooltip(number, port, poe)} role="button" tabIndex="0" aria-label={`Edit port ${number}`}
+			onClick={select} onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); select(); } }}>
 			{port?.stp?.enabled && <span className="port-badge port-badge-stp">&bull;</span>}
 			{poe && port?.poe?.enabled && <span className="port-poe">{port?.poe?.mode}</span>}
-			{number}
-			<span className="port-vlan">{port?.vlan?.pvid}</span>
+			{number}<span className="port-vlan">{port?.vlan?.pvid}</span>
 		</div>
 	);
 }

@@ -1,13 +1,19 @@
+import { sha256Hex } from './crypto.js';
+
 const DEFAULT_URL = import.meta.env.DEV
 	? `ws://${location.host}/ws`
-	: `ws://${location.hostname}:4001`;
+	: `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.hostname}:4001`;
+
+const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 export class ConfigdClient {
-	constructor({ url = DEFAULT_URL, onStatus, onConfig, onConnection, onError } = {}) {
+	constructor({ url = DEFAULT_URL, onStatus, onConfig, onConnection, onAuth, onAuthRequired, onError } = {}) {
 		this.url = url;
 		this.onStatus = onStatus;
 		this.onConfig = onConfig;
 		this.onConnection = onConnection;
+		this.onAuth = onAuth;
+		this.onAuthRequired = onAuthRequired;
 		this.onError = onError;
 		this.socket = null;
 		this.pending = new Map();
@@ -30,7 +36,7 @@ export class ConfigdClient {
 		this.#rejectPending(new Error('Connection closed'));
 	}
 
-	request(type, data) {
+	request(type, data, { timeout = 10000 } = {}) {
 		if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
 			return Promise.reject(new Error('WebSocket not connected'));
 		}
@@ -38,19 +44,60 @@ export class ConfigdClient {
 		const message = { id, type };
 		if (data !== undefined) message.data = data;
 		return new Promise((resolve, reject) => {
-			const timeout = setTimeout(() => {
+			const timer = setTimeout(() => {
 				this.pending.delete(id);
 				reject(new Error('Request timed out'));
-			}, 10000);
-			this.pending.set(id, { resolve, reject, timeout });
+			}, timeout);
+			this.pending.set(id, { resolve, reject, timeout: timer });
 			try {
 				this.socket.send(JSON.stringify(message));
 			} catch (error) {
-				clearTimeout(timeout);
+				clearTimeout(timer);
 				this.pending.delete(id);
 				reject(error);
 			}
 		});
+	}
+
+	authenticate(username, password) {
+		return this.request('auth', { username, password }, { timeout: 15000 });
+	}
+
+	async uploadFirmware(file, { overlay = 'preserve', force = false, onProgress } = {}) {
+		if (!file) throw new Error('Select a firmware image first');
+		if (file.size <= 0 || file.size > 16 * 1024 * 1024) {
+			throw new Error('Firmware must be no larger than 16 MiB');
+		}
+		onProgress?.({ phase: 'hashing', progress: 0, sent: 0, total: file.size });
+		const sha256 = sha256Hex(new Uint8Array(await file.arrayBuffer()));
+		await this.request('firmware_upload_start', {
+			name: file.name,
+			size: file.size,
+			sha256,
+			overlay,
+			force,
+		}, { timeout: 15000 });
+
+		const chunkSize = 64 * 1024;
+		let sent = 0;
+		try {
+			while (sent < file.size) {
+				if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
+					throw new Error('Connection lost during firmware upload');
+				}
+				const end = Math.min(sent + chunkSize, file.size);
+				this.socket.send(await file.slice(sent, end).arrayBuffer());
+				sent = end;
+				while (this.socket.bufferedAmount > 512 * 1024) await sleep(20);
+				onProgress?.({ phase: 'uploading', progress: Math.round(sent * 100 / file.size), sent, total: file.size });
+			}
+			const response = await this.request('firmware_upload_finish', undefined, { timeout: 30000 });
+			onProgress?.({ phase: 'starting', progress: 100, sent, total: file.size });
+			return response;
+		} catch (error) {
+			this.request('firmware_upload_cancel').catch(() => {});
+			throw error;
+		}
 	}
 
 	#open() {
@@ -60,14 +107,13 @@ export class ConfigdClient {
 		socket.onopen = () => {
 			this.reconnectDelay = 1000;
 			this.onConnection?.(true);
-			this.request('get_config').catch(error => this.onError?.(error.message));
-			this.request('get_status').catch(error => this.onError?.(error.message));
 		};
 		socket.onmessage = event => this.#handleMessage(event.data);
 		socket.onerror = () => this.onError?.('WebSocket connection failed');
 		socket.onclose = () => {
 			if (this.socket === socket) this.socket = null;
 			this.onConnection?.(false);
+			this.onAuthRequired?.();
 			this.#rejectPending(new Error('Connection lost'));
 			if (!this.stopped) {
 				this.reconnectTimer = setTimeout(() => this.#open(), this.reconnectDelay);
@@ -91,6 +137,8 @@ export class ConfigdClient {
 
 		if (message.type === 'status') this.onStatus?.(message.data ?? {});
 		if (message.type === 'config') this.onConfig?.(message.data ?? {});
+		if (message.type === 'auth') this.onAuth?.(message.data ?? {});
+		if (message.type === 'auth_required') this.onAuthRequired?.(message.data ?? {});
 
 		if (message.id != null) {
 			const pending = this.pending.get(String(message.id));

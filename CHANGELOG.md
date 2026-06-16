@@ -9,18 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-- Linux PAM login and administrator password management.
-- Browser firmware upload, SHA-256 verification handoff, overlay selection, and progress/status display.
-- Authenticated bounded root command window.
-- Plain and password-protected configuration backup/restore compatible with the CLI.
-- Click-to-scroll/highlight port navigation and read-only hover summaries.
-- Persistent unapplied-change notification with direct Apply and Discard actions.
+- Local Linux account login and password management.
+- Browser firmware upload and updater status.
+- Authenticated bounded command window.
+- Plain JSON backup and restore.
+- Click-to-scroll port navigation and hover summaries.
+- Persistent unapplied-change notification with Apply and Discard actions.
 
-### Fixed
+### Changed
 
-- Preserve desired nested PoE, VLAN, and STP values when combining runtime status.
-- Keep all port controls editable when physical link is down, including pre-link PoE enablement.
-- Use bundled cryptography so HTTP-hosted firmware hashing and encrypted backups do not require a secure browser origin.
+- Preserve desired nested PoE/VLAN/STP state when runtime link status is merged.
+- Keep all port controls editable while physical link is down.
+- Remove backup encryption and browser crypto dependencies for a smaller firmware image.
 
 ## [0.6.0] - 2026-02-26
 
@@ -95,7 +95,3 @@ A reduction in final zip size from `250 KB` to `72.2 KB`.
 ### Changed
 
 - Grey-out rows of ports which aren't established
-
-## Build portability fix
-
-- Replaced an accidentally committed internal npm mirror URL for `crypto-js` with the public `registry.npmjs.org` tarball URL.

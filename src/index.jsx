@@ -50,153 +50,78 @@ function App() {
 	useEffect(() => {
 		const client = new ConfigdClient({
 			onStatus: next => setStatus(next),
-			onConfig: next => {
-				setConfig(next); setConfigOnDisk(next); setDiff({});
-			},
+			onConfig: next => { setConfig(next); setConfigOnDisk(next); setDiff({}); },
 			onConnection: value => setConnected(value),
 			onAuth: next => { setAuth(next); setError(null); },
-			onAuthRequired: () => {
-				setAuth(null); setConfig(null); setConfigOnDisk(null); setDiff({}); setStatus({});
-			},
+			onAuthRequired: () => { setAuth(null); setConfig(null); setConfigOnDisk(null); setDiff({}); setStatus({}); },
 			onError: message => setError(message),
 		});
-		clientRef.current = client;
-		client.connect();
+		clientRef.current = client; client.connect();
 		return () => { client.close(); clientRef.current = null; };
 	}, []);
 
 	const login = useCallback(async (username, password) => {
 		setError(null);
-		try {
-			const response = await clientRef.current.authenticate(username, password);
-			setAuth(response.data);
-		} catch (loginError) { setError(loginError.message); }
+		try { const response = await clientRef.current.authenticate(username, password); setAuth(response.data); }
+		catch (loginError) { setError(loginError.message); }
 	}, []);
-
 	const logout = useCallback(async () => {
-		try { await clientRef.current.request('logout'); }
-		catch (logoutError) { setError(logoutError.message); }
+		try { await clientRef.current.request('logout'); } catch (logoutError) { setError(logoutError.message); }
 		finally { setAuth(null); setConfig(null); setConfigOnDisk(null); setStatus({}); }
 	}, []);
-
 	const updateRoot = useCallback((path, value) => {
-		setConfig(previous => {
-			const updated = setPath(previous, path, value);
-			setDiff(computeDiff(updated, configOnDisk) ?? {});
-			return updated;
-		});
+		setConfig(previous => { const updated = setPath(previous, path, value); setDiff(computeDiff(updated, configOnDisk) ?? {}); return updated; });
 	}, [configOnDisk]);
-
 	const updatePort = useCallback((portNumber, path, value) => {
-		setConfig(previous => {
-			const updated = structuredClone(previous);
-			updated.ports[portNumber] = setPath(updated.ports[portNumber], path, value);
-			setDiff(computeDiff(updated, configOnDisk) ?? {});
-			return updated;
-		});
+		setConfig(previous => { const updated = structuredClone(previous); updated.ports[portNumber] = setPath(updated.ports[portNumber], path, value); setDiff(computeDiff(updated, configOnDisk) ?? {}); return updated; });
 	}, [configOnDisk]);
-
 	const updatePortMulti = useCallback((portNumber, updates) => {
-		setConfig(previous => {
-			const updated = structuredClone(previous);
-			let port = updated.ports[portNumber];
-			for (const [path, value] of Object.entries(updates)) port = setPath(port, path, value);
-			updated.ports[portNumber] = port;
-			setDiff(computeDiff(updated, configOnDisk) ?? {});
-			return updated;
-		});
+		setConfig(previous => { const updated = structuredClone(previous); let port = updated.ports[portNumber]; for (const [path, value] of Object.entries(updates)) port = setPath(port, path, value); updated.ports[portNumber] = port; setDiff(computeDiff(updated, configOnDisk) ?? {}); return updated; });
 	}, [configOnDisk]);
-
 	const selectPort = useCallback(port => {
 		setSelectedPort(String(port));
-		requestAnimationFrame(() => {
-			document.getElementById(`port-row-${port}`)?.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
-		});
+		requestAnimationFrame(() => document.getElementById(`port-row-${port}`)?.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' }));
 	}, []);
-
 	const uploadConfig = useCallback(async () => {
 		const delta = computeDiff(config, configOnDisk) ?? {};
 		if (Object.keys(delta).length === 0) return;
 		setUploading(true); setError(null); setNotice(null);
-		try {
-			const response = await clientRef.current.request('config', delta);
-			const warnings = response.data?.warnings ?? [];
-			setNotice(warnings.length ? `Configuration accepted with warnings: ${warnings.join('; ')}` : 'Configuration accepted');
-		} catch (uploadError) { setError(uploadError.message || 'Bad Request'); }
+		try { const response = await clientRef.current.request('config', delta); const warnings = response.data?.warnings ?? []; setNotice(warnings.length ? `Configuration accepted with warnings: ${warnings.join('; ')}` : 'Configuration accepted'); }
+		catch (uploadError) { setError(uploadError.message || 'Bad Request'); }
 		finally { setUploading(false); }
 	}, [config, configOnDisk]);
-
 	const discardChanges = useCallback(() => {
 		if (!configOnDisk) return;
-		setConfig(structuredClone(configOnDisk));
-		setDiff({});
-		setError(null);
-		setNotice('Unapplied configuration changes discarded');
+		setConfig(structuredClone(configOnDisk)); setDiff({}); setError(null); setNotice('Unapplied configuration changes discarded');
 	}, [configOnDisk]);
-
 	const hasDiff = Object.keys(diff ?? {}).length > 0;
-
 	useEffect(() => {
 		if (!hasDiff) return undefined;
-		const warnBeforeLeaving = event => {
-			event.preventDefault();
-			event.returnValue = '';
-		};
+		const warnBeforeLeaving = event => { event.preventDefault(); event.returnValue = ''; };
 		globalThis.addEventListener('beforeunload', warnBeforeLeaving);
 		return () => globalThis.removeEventListener('beforeunload', warnBeforeLeaving);
 	}, [hasDiff]);
 
 	if (!auth) return <Login connected={connected} onLogin={login} error={error} />;
-
 	const client = clientRef.current;
 	const poeSupported = Boolean(status?.capabilities?.poe?.supported);
-
 	return <div>
 		<div id="heading">
-			<div className="heading-bar">
-				<div><h1>postmerkOS</h1><span className="version">{/* VERSION */} dev {/* NOTE: do not remove; this is replaced in CI */}</span></div>
-				<div className="heading-actions">
-					{config && client && <div id="buttons">
-						<Button onClick={uploadConfig} isLoading={uploading} disabled={!connected || uploading || !hasDiff} title={connected ? 'upload config' : 'disconnected'}>
-							<svg className={hasDiff ? 'diff-foreground' : ''} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentcolor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M9 22 C0 23 1 12 9 13 6 2 23 2 22 10 32 7 32 23 23 22 M11 18 L16 14 21 18 M16 14 L16 29" /></svg>
-						</Button>
-						<button title="view config" onClick={() => dialogRef.current.showModal()}>
-							<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentcolor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><circle cx="17" cy="15" r="1" /><circle cx="16" cy="16" r="6" /><path d="M2 16 C2 16 7 6 16 6 25 6 30 16 30 16 30 16 25 26 16 26 7 26 2 16 2 16 Z" /></svg>
-						</button>
-						<dialog className="config-preview" ref={dialogRef} onClick={event => { if (event.target === dialogRef.current) dialogRef.current.close(); }}><textarea readOnly value={JSON.stringify(config, null, 2)} /></dialog>
-						<TerminalTool client={client} />
-						<FirmwareTool client={client} connected={connected} />
-						<BackupTool client={client} config={configOnDisk} />
-						<AccountTool client={client} auth={auth} />
-						<Legend poe={poeSupported} />
-						<button title={`sign out ${auth.username}`} onClick={logout}>logout</button>
-					</div>}
-				</div>
-			</div>
+			<div className="heading-bar"><div><h1>postmerkOS</h1><span className="version">{/* VERSION */} dev {/* NOTE: do not remove; this is replaced in CI */}</span></div>
+				<div className="heading-actions">{config && client && <div id="buttons">
+					<Button onClick={uploadConfig} isLoading={uploading} disabled={!connected || uploading || !hasDiff} title={connected ? 'upload config' : 'disconnected'}>apply</Button>
+					<button title="view config" onClick={() => dialogRef.current.showModal()}>config</button>
+					<dialog className="config-preview" ref={dialogRef} onClick={event => { if (event.target === dialogRef.current) dialogRef.current.close(); }}><textarea readOnly value={JSON.stringify(config, null, 2)} /></dialog>
+					<TerminalTool client={client} /><FirmwareTool client={client} connected={connected} /><BackupTool client={client} config={configOnDisk} /><AccountTool client={client} auth={auth} /><Legend poe={poeSupported} />
+					<button title={`sign out ${auth.username}`} onClick={logout}>logout</button>
+				</div>}</div></div>
 			<div className="device-summary"><div>{status.device}</div><div>{status.datetime}</div>{Object.keys(status.temperature ?? {}).map(type => <div key={type}>{type}: {(status.temperature[type] ?? []).map((c, i) => <span key={i}>{Number(c).toFixed(1)} </span>)}(<span className="status-temp">°C</span>)</div>)}</div>
 			<div className={`connection-state ${connected ? 'connected' : 'disconnected'}`}>{connected ? `connected as ${auth.username}` : 'disconnected'}</div>
 			{error && <div className="error">{error}</div>}{notice && <div className="notice">{notice}</div>}
 			{(status.errors ?? []).map((item, index) => <div className="warning" key={`${item.source}-${index}`}>{item.source}: {item.message}</div>)}
 		</div>
-		{config && <div>
-			<NetworkPanel config={config} status={status} updateConfig={updateRoot} diff={diff} />
-			<Ports config={config} status={status} poe={poeSupported} selectedPort={selectedPort} onSelectPort={selectPort} />
-			<Table ports={config.ports} updatePort={updatePort} updatePortMulti={updatePortMulti} status={status} poe={poeSupported} diff={diff} selectedPort={selectedPort} />
-		</div>}
-		{hasDiff && <aside className="unsaved-changes" role="status" aria-live="assertive">
-			<div className="unsaved-copy">
-				<strong>Unapplied configuration changes</strong>
-				<span>Apply these changes before leaving the page, or discard them to restore the switch's current configuration.</span>
-			</div>
-			<div className="unsaved-actions">
-				<button type="button" className="discard-button" onClick={discardChanges} disabled={uploading}>
-					Discard changes
-				</button>
-				<button type="button" className="apply-button" onClick={uploadConfig} disabled={!connected || uploading}>
-					{uploading ? 'Applying…' : 'Apply changes'}
-				</button>
-			</div>
-		</aside>}
+		{config && <div><NetworkPanel config={config} status={status} updateConfig={updateRoot} diff={diff} /><Ports config={config} status={status} poe={poeSupported} selectedPort={selectedPort} onSelectPort={selectPort} /><Table ports={config.ports} updatePort={updatePort} updatePortMulti={updatePortMulti} status={status} poe={poeSupported} diff={diff} selectedPort={selectedPort} /></div>}
+		{hasDiff && <aside className="unsaved-changes" role="status" aria-live="assertive"><div className="unsaved-copy"><strong>Unapplied configuration changes</strong><span>Apply these changes before leaving the page, or discard them to restore the switch's current configuration.</span></div><div className="unsaved-actions"><button type="button" className="discard-button" onClick={discardChanges} disabled={uploading}>Discard changes</button><button type="button" className="apply-button" onClick={uploadConfig} disabled={!connected || uploading}>{uploading ? 'Applying…' : 'Apply changes'}</button></div></aside>}
 	</div>;
 }
 

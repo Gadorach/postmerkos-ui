@@ -39,50 +39,64 @@ function wsPlugin() {
 					return;
 				}
 
-				// Mock mode: serve test data
+				// Mock mode: serve test data behind a development-only PAM-like login.
 				const wss = new WebSocketServer({ noServer: true });
 				wss.handleUpgrade(req, socket, head, (ws) => {
-					const configData = JSON.parse(
-						readFileSync(resolve('src/test/24/config'), 'utf-8')
-					);
-					const statusData = JSON.parse(
-						readFileSync(resolve('src/test/24/status'), 'utf-8')
-					);
-
-					ws.send(JSON.stringify({ type: 'config', data: configData }));
-					ws.send(JSON.stringify({ type: 'status', data: statusData }));
+					const configData = JSON.parse(readFileSync(resolve('src/test/24/config'), 'utf-8'));
+					const statusData = JSON.parse(readFileSync(resolve('src/test/24/status'), 'utf-8'));
+					let authenticated = false;
+					let upload = null;
+					const send = (type, data, id) => ws.send(JSON.stringify({ ...(id != null ? { id } : {}), type, data }));
+					send('auth_required', { message: 'Development mock login: use any non-empty username and password.' });
 
 					const interval = setInterval(() => {
-						if (ws.readyState === ws.OPEN) {
-							ws.send(JSON.stringify({ type: 'status', data: statusData }));
-						}
+						if (authenticated && ws.readyState === ws.OPEN) send('status', statusData);
 					}, 3000);
 
 					const merge = (target, delta) => {
 						for (const [key, value] of Object.entries(delta)) {
 							if (value === null) delete target[key];
-							else if (value && typeof value === 'object' && !Array.isArray(value)) {
-								target[key] = merge({ ...(target[key] ?? {}) }, value);
-							} else target[key] = value;
+							else if (value && typeof value === 'object' && !Array.isArray(value)) target[key] = merge({ ...(target[key] ?? {}) }, value);
+							else target[key] = value;
 						}
 						return target;
 					};
 
-					ws.on('message', (raw) => {
-						let msg;
-						try { msg = JSON.parse(raw); } catch {
-							ws.send(JSON.stringify({ type: 'error', data: { status: 400, message: 'Bad Request' } }));
+					ws.on('message', (raw, isBinary) => {
+						if (isBinary) {
+							if (authenticated && upload) upload.received += raw.length;
 							return;
 						}
-						if (msg.type === 'get_config') ws.send(JSON.stringify({ id: msg.id, type: 'config', data: configData }));
-						else if (msg.type === 'get_status') ws.send(JSON.stringify({ id: msg.id, type: 'status', data: statusData }));
+						let msg;
+						try { msg = JSON.parse(raw.toString()); } catch { send('error', { status: 400, message: 'Bad Request' }); return; }
+						if (msg.type === 'auth') {
+							if (!msg.data?.username || !msg.data?.password) send('error', { status: 401, message: 'Unauthorized' }, msg.id);
+							else {
+								authenticated = true;
+								send('auth', { username: msg.data.username, users: [{ username: msg.data.username }] }, msg.id);
+								send('config', configData); send('status', statusData);
+							}
+							return;
+						}
+						if (msg.type === 'logout') { authenticated = false; send('auth_required', { message: 'Logged out' }, msg.id); return; }
+						if (!authenticated) { send('error', { status: 401, message: 'Unauthorized' }, msg.id); return; }
+						if (msg.type === 'get_config') send('config', configData, msg.id);
+						else if (msg.type === 'get_status') send('status', statusData, msg.id);
 						else if (msg.type === 'config' && msg.data && typeof msg.data === 'object') {
-							merge(configData, msg.data);
-							ws.send(JSON.stringify({ id: msg.id, type: 'ack', data: { message: 'Configuration accepted', applied: 1, warnings: [] } }));
-							ws.send(JSON.stringify({ type: 'config', data: configData }));
-						} else ws.send(JSON.stringify({ id: msg.id, type: 'error', data: { status: 400, message: 'Bad Request' } }));
+							merge(configData, msg.data); send('ack', { message: 'Configuration accepted', applied: 1, warnings: [] }, msg.id); send('config', configData);
+						} else if (msg.type === 'replace_config' && msg.data && typeof msg.data === 'object') {
+							for (const key of Object.keys(configData)) delete configData[key]; Object.assign(configData, msg.data);
+							send('ack', { message: 'Configuration replaced', applied: 1, warnings: [] }, msg.id); send('config', configData);
+						} else if (msg.type === 'terminal_exec') send('terminal', { output: `mock: ${msg.data?.command ?? ''}\n`, exit_code: 0, timed_out: false, truncated: false }, msg.id);
+						else if (msg.type === 'password_change') send('ack', { message: 'Development mock password updated' }, msg.id);
+						else if (msg.type === 'firmware_status') send('firmware_status', { state: 'idle', stage: 'idle', progress: 0, message: 'No update running' }, msg.id);
+						else if (msg.type === 'firmware_upload_start') { upload = { expected: msg.data?.size ?? 0, received: 0 }; send('ack', { message: 'Upload ready' }, msg.id); }
+						else if (msg.type === 'firmware_upload_cancel') { upload = null; send('ack', { message: 'Upload cancelled' }, msg.id); }
+						else if (msg.type === 'firmware_upload_finish') {
+							if (!upload || upload.received !== upload.expected) send('error', { status: 400, message: 'Upload size mismatch' }, msg.id);
+							else { upload = null; send('ack', { message: 'Mock firmware handoff complete' }, msg.id); }
+						} else send('error', { status: 400, message: 'Bad Request' }, msg.id);
 					});
-
 					ws.on('close', () => clearInterval(interval));
 				});
 			});

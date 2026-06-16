@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Linux PAM login and administrator password management.
+- Browser firmware upload, SHA-256 verification handoff, overlay selection, and progress/status display.
+- Authenticated bounded root command window.
+- Plain and password-protected configuration backup/restore compatible with the CLI.
+- Click-to-scroll/highlight port navigation and read-only hover summaries.
+- Persistent unapplied-change notification with direct Apply and Discard actions.
+
+### Fixed
+
+- Preserve desired nested PoE, VLAN, and STP values when combining runtime status.
+- Keep all port controls editable when physical link is down, including pre-link PoE enablement.
+- Use bundled cryptography so HTTP-hosted firmware hashing and encrypted backups do not require a secure browser origin.
+
 ## [0.6.0] - 2026-02-26
 
 Websockets and polling, oh my!

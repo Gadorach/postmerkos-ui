@@ -1,5 +1,6 @@
 import { useState } from 'preact/hooks';
 import Help from './help';
+import { mergePortState } from './port-state';
 
 const SECTIONS = [
 	{
@@ -43,7 +44,7 @@ const SECTIONS = [
 // Check if a vlans string represents multiple VLANs (comma-separated or range)
 const isMultipleVlans = (v) => /[,\-]/.test(String(v ?? ''));
 
-export default function Table({ ports, status, poe, updatePort, updatePortMulti, diff }) {
+export default function Table({ ports, status, poe, updatePort, updatePortMulti, diff, selectedPort }) {
 	const [sections, setSections] = useState(() => {
 		const init = {};
 		SECTIONS.forEach(s => { init[s.key] = s.defaultExpanded; });
@@ -130,7 +131,7 @@ export default function Table({ ports, status, poe, updatePort, updatePortMulti,
 				</thead>
 				<tbody>
 					{Object.keys(ports).map(port => {
-						let p = { ...ports[port], ...status?.ports?.[port] };
+						let p = mergePortState(ports[port], status?.ports?.[port]);
 						let enabled = p.enabled ?? true;
 						let established = p.link?.established;
 						let poeMode = p.poe?.mode ?? 'at';
@@ -142,7 +143,7 @@ export default function Table({ ports, status, poe, updatePort, updatePortMulti,
 						let nativeValue = p.vlan?.untagged_vid || '';
 						let stpEnabled = p.stp?.enabled ?? false;
 						return (
-							<tr key={port} className={established ? '' : 'inactive'}>
+							<tr id={`port-row-${port}`} key={port} className={`${established ? '' : 'link-down'} ${String(selectedPort) === String(port) ? 'selected-port-row' : ''}`.trim()}>
 								<td className={`sticky-col sticky-col-1 ${diffStyle(port, 'enabled') ?? ''}`}>
 									<span className="toggle">
 										<button

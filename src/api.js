@@ -15,6 +15,7 @@ export class ConfigdClient {
 		this.onAuthRequired = onAuthRequired;
 		this.socket = null;
 		this.pending = new Map();
+		this.listeners = new Map();
 		this.nextId = 1;
 		this.reconnectDelay = 1000;
 		this.reconnectTimer = null;
@@ -31,6 +32,16 @@ export class ConfigdClient {
 	}
 
 	authenticate(username, password) { return this.request('auth', { username, password }); }
+
+	subscribe(type, callback) {
+		if (!this.listeners.has(type)) this.listeners.set(type, new Set());
+		this.listeners.get(type).add(callback);
+		return () => {
+			const listeners = this.listeners.get(type);
+			listeners?.delete(callback);
+			if (listeners?.size === 0) this.listeners.delete(type);
+		};
+	}
 
 	request(type, data, { timeout = 10000 } = {}) {
 		if (!this.socket || this.socket.readyState !== WebSocket.OPEN)
@@ -114,6 +125,7 @@ export class ConfigdClient {
 		if (message.type === 'config') this.onConfig?.(message.data ?? {});
 		if (message.type === 'auth') this.onAuth?.(message.data ?? {});
 		if (message.type === 'auth_required') this.onAuthRequired?.(message.data ?? {});
+		for (const listener of this.listeners.get(message.type) ?? []) listener(message.data ?? {}, message);
 		if (message.id != null) {
 			const pending = this.pending.get(String(message.id));
 			if (pending) {

@@ -1,131 +1,72 @@
 import { render } from 'preact';
 import './style.css';
-import { useState, useEffect, useRef, useCallback } from 'preact/hooks';
+import { useCallback, useEffect, useRef, useState } from 'preact/hooks';
 import { ConfigdClient } from './api';
-import NetworkPanel from './network';
 import Ports from './ports';
 import Legend from './legend';
-import Table from './table';
-import Button from './button';
 import Login from './login';
-import { AccountTool, BackupTool, FirmwareTool, TerminalTool } from './tools';
+import { CompatibilityNotice, ConfigurationMenu, PortEditor, UpdateMenu } from './menus';
 
 const setPath = (obj, path, value) => {
-	const keys = path.split('.');
-	const result = structuredClone(obj);
-	let current = result;
-	for (let i = 0; i < keys.length - 1; i++) {
-		if (current[keys[i]] == null) current[keys[i]] = {};
-		current = current[keys[i]];
-	}
-	current[keys[keys.length - 1]] = value;
-	return result;
+	const keys = path.split('.'); const result = structuredClone(obj); let current = result;
+	for (let index = 0; index < keys.length - 1; index++) { if (current[keys[index]] == null) current[keys[index]] = {}; current = current[keys[index]]; }
+	current[keys.at(-1)] = value; return result;
 };
-
 const computeDiff = (desired, current) => {
 	if (desired === current) return undefined;
 	if (desired == null || current == null || typeof desired !== 'object' || typeof current !== 'object') return desired;
 	const result = {};
-	for (const key of Object.keys(desired)) {
-		const value = computeDiff(desired[key], current[key]);
-		if (value !== undefined && (typeof value !== 'object' || value === null || Object.keys(value).length > 0)) result[key] = value;
-	}
+	for (const key of Object.keys(desired)) { const value = computeDiff(desired[key], current[key]); if (value !== undefined && (typeof value !== 'object' || value === null || Object.keys(value).length)) result[key] = value; }
 	return result;
 };
 
 function App() {
-	const [auth, setAuth] = useState(null);
-	const [config, setConfig] = useState(null);
-	const [configOnDisk, setConfigOnDisk] = useState(null);
-	const [diff, setDiff] = useState({});
-	const [status, setStatus] = useState({});
-	const [error, setError] = useState(null);
-	const [notice, setNotice] = useState(null);
-	const [uploading, setUploading] = useState(false);
-	const [connected, setConnected] = useState(false);
-	const [selectedPort, setSelectedPort] = useState(null);
-	const dialogRef = useRef();
+	const [auth, setAuth] = useState(null); const [config, setConfig] = useState(null); const [configOnDisk, setConfigOnDisk] = useState(null);
+	const [diff, setDiff] = useState({}); const [status, setStatus] = useState({}); const [error, setError] = useState(null); const [notice, setNotice] = useState(null);
+	const [uploading, setUploading] = useState(false); const [connected, setConnected] = useState(false); const [selectedPort, setSelectedPort] = useState(null);
 	const clientRef = useRef(null);
-
 	useEffect(() => {
 		const client = new ConfigdClient({
-			onStatus: next => setStatus(next),
-			onConfig: next => { setConfig(next); setConfigOnDisk(next); setDiff({}); },
-			onConnection: value => setConnected(value),
-			onAuth: next => { setAuth(next); setError(null); },
-			onAuthRequired: () => { setAuth(null); setConfig(null); setConfigOnDisk(null); setDiff({}); setStatus({}); },
-			onError: message => setError(message),
+			onStatus: next => setStatus(next), onConfig: next => { setConfig(next); setConfigOnDisk(next); setDiff({}); },
+			onConnection: setConnected, onAuth: next => { setAuth(next); setError(null); },
+			onAuthRequired: () => { setAuth(null); setConfig(null); setConfigOnDisk(null); setDiff({}); setStatus({}); }, onError: setError,
 		});
-		clientRef.current = client; client.connect();
-		return () => { client.close(); clientRef.current = null; };
+		clientRef.current = client; client.connect(); return () => { client.close(); clientRef.current = null; };
 	}, []);
-
-	const login = useCallback(async (username, password) => {
-		setError(null);
-		try { const response = await clientRef.current.authenticate(username, password); setAuth(response.data); }
-		catch (loginError) { setError(loginError.message); }
-	}, []);
-	const logout = useCallback(async () => {
-		try { await clientRef.current.request('logout'); } catch (logoutError) { setError(logoutError.message); }
-		finally { setAuth(null); setConfig(null); setConfigOnDisk(null); setStatus({}); }
-	}, []);
-	const updateRoot = useCallback((path, value) => {
-		setConfig(previous => { const updated = setPath(previous, path, value); setDiff(computeDiff(updated, configOnDisk) ?? {}); return updated; });
-	}, [configOnDisk]);
-	const updatePort = useCallback((portNumber, path, value) => {
-		setConfig(previous => { const updated = structuredClone(previous); updated.ports[portNumber] = setPath(updated.ports[portNumber], path, value); setDiff(computeDiff(updated, configOnDisk) ?? {}); return updated; });
-	}, [configOnDisk]);
-	const updatePortMulti = useCallback((portNumber, updates) => {
-		setConfig(previous => { const updated = structuredClone(previous); let port = updated.ports[portNumber]; for (const [path, value] of Object.entries(updates)) port = setPath(port, path, value); updated.ports[portNumber] = port; setDiff(computeDiff(updated, configOnDisk) ?? {}); return updated; });
-	}, [configOnDisk]);
-	const selectPort = useCallback(port => {
-		setSelectedPort(String(port));
-		requestAnimationFrame(() => document.getElementById(`port-row-${port}`)?.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' }));
-	}, []);
+	const login = useCallback(async (username, password) => { setError(null); try { const response = await clientRef.current.authenticate(username, password); setAuth(response.data); } catch (failure) { setError(failure.message); } }, []);
+	const logout = useCallback(async () => { try { await clientRef.current.request('logout'); } catch (failure) { setError(failure.message); } finally { setAuth(null); setConfig(null); setConfigOnDisk(null); setStatus({}); } }, []);
+	const updateRoot = useCallback((path, value) => setConfig(previous => { const updated = setPath(previous, path, value); setDiff(computeDiff(updated, configOnDisk) ?? {}); return updated; }), [configOnDisk]);
+	const updatePort = useCallback((port, path, value) => setConfig(previous => { const updated = structuredClone(previous); updated.ports[port] = setPath(updated.ports[port], path, value); setDiff(computeDiff(updated, configOnDisk) ?? {}); return updated; }), [configOnDisk]);
+	const updatePortMulti = useCallback((port, updates) => setConfig(previous => { const updated = structuredClone(previous); let next = updated.ports[port]; for (const [path, value] of Object.entries(updates)) next = setPath(next, path, value); updated.ports[port] = next; setDiff(computeDiff(updated, configOnDisk) ?? {}); return updated; }), [configOnDisk]);
 	const uploadConfig = useCallback(async () => {
-		const delta = computeDiff(config, configOnDisk) ?? {};
-		if (Object.keys(delta).length === 0) return;
+		const delta = computeDiff(config, configOnDisk) ?? {}; if (!Object.keys(delta).length) return;
 		setUploading(true); setError(null); setNotice(null);
 		try { const response = await clientRef.current.request('config', delta); const warnings = response.data?.warnings ?? []; setNotice(warnings.length ? `Configuration accepted with warnings: ${warnings.join('; ')}` : 'Configuration accepted'); }
-		catch (uploadError) { setError(uploadError.message || 'Bad Request'); }
-		finally { setUploading(false); }
+		catch (failure) { setError(failure.message || 'Bad Request'); } finally { setUploading(false); }
 	}, [config, configOnDisk]);
-	const discardChanges = useCallback(() => {
-		if (!configOnDisk) return;
-		setConfig(structuredClone(configOnDisk)); setDiff({}); setError(null); setNotice('Unapplied configuration changes discarded');
-	}, [configOnDisk]);
+	const discardChanges = useCallback(() => { if (!configOnDisk) return; setConfig(structuredClone(configOnDisk)); setDiff({}); setError(null); setNotice('Unapplied configuration changes discarded.'); }, [configOnDisk]);
 	const hasDiff = Object.keys(diff ?? {}).length > 0;
-	useEffect(() => {
-		if (!hasDiff) return undefined;
-		const warnBeforeLeaving = event => { event.preventDefault(); event.returnValue = ''; };
-		globalThis.addEventListener('beforeunload', warnBeforeLeaving);
-		return () => globalThis.removeEventListener('beforeunload', warnBeforeLeaving);
-	}, [hasDiff]);
-
+	useEffect(() => { if (!hasDiff) return undefined; const warn = event => { event.preventDefault(); event.returnValue = ''; }; globalThis.addEventListener('beforeunload', warn); return () => globalThis.removeEventListener('beforeunload', warn); }, [hasDiff]);
 	if (!auth) return <Login connected={connected} onLogin={login} error={error} />;
-	const client = clientRef.current;
-	const hasCapability = capability => (auth?.capabilities ?? []).includes(capability);
-	const canWriteConfig = hasCapability('switching.write') || hasCapability('network.write');
-	const poeSupported = Boolean(status?.capabilities?.poe?.supported);
+	const client = clientRef.current; const hasCapability = capability => (auth?.capabilities ?? []).includes(capability); const canWrite = hasCapability('switching.write') || hasCapability('network.write'); const poe = Boolean(status?.capabilities?.poe?.supported);
 	return <div>
-		<div id="heading">
-			<div className="heading-bar"><div><h1>postmerkOS</h1><span className="version">{status?.release?.version ?? 'unknown firmware'}</span></div>
-				<div className="heading-actions">{config && client && <div id="buttons">
-					{canWriteConfig && <Button onClick={uploadConfig} isLoading={uploading} disabled={!connected || uploading || !hasDiff} title={connected ? 'upload config' : 'disconnected'}>apply</Button>}
-					<button title="view config" onClick={() => dialogRef.current.showModal()}>config</button>
-					<dialog className="config-preview" ref={dialogRef} onClick={event => { if (event.target === dialogRef.current) dialogRef.current.close(); }}><textarea readOnly value={JSON.stringify(config, null, 2)} /></dialog>
-					{hasCapability('terminal.exec') && <TerminalTool client={client} />}{hasCapability('firmware.update') && <FirmwareTool client={client} connected={connected} config={configOnDisk} compatibility={status?.capabilities?.compatibility} />}<BackupTool client={client} config={configOnDisk} canRestore={hasCapability('config.restore')} /><AccountTool client={client} auth={auth} canManage={hasCapability('users.manage')} /><Legend poe={poeSupported} />
-					<button title={`sign out ${auth.username}`} onClick={logout}>logout</button>
-				</div>}</div></div>
-			<div className="device-summary"><div>{status.device}</div><div>{status.datetime}</div>{Object.keys(status.temperature ?? {}).map(type => <div key={type}>{type}: {(status.temperature[type] ?? []).map((c, i) => <span key={i}>{Number(c).toFixed(1)} </span>)}(<span className="status-temp">°C</span>)</div>)}</div>
-			<div className={`connection-state ${connected ? 'connected' : 'disconnected'}`}>{connected ? `connected as ${auth.username} (${auth.role ?? 'unknown role'})` : 'disconnected'}</div>
-			{status?.capabilities?.compatibility === 'untested' && <div className="warning">This switch model is currently untested with this firmware. Compatibility reporting will be available from the system information menu.</div>}
-			{status?.security?.default_password_active && <div className="warning">The root password is still set to the switch serial number. Change it from the account menu when practical.</div>}
+		<header id="heading">
+			<div className="heading-bar"><div><h1>postmerkOS</h1><span className="version">{status?.release?.version ?? 'unknown firmware'}</span></div><nav className="heading-actions">
+				<Legend poe={poe} />
+				{client && config && <UpdateMenu client={client} connected={connected} config={configOnDisk} compatibility={status?.capabilities?.compatibility} hasCapability={hasCapability} />}
+				{client && config && <ConfigurationMenu client={client} auth={auth} config={config} status={status} updateRoot={updateRoot} updatePort={updatePort} updatePortMulti={updatePortMulti} diff={diff} poe={poe} hasCapability={hasCapability} />}
+				<button className="toolbar-button" onClick={logout}>Logout</button>
+			</nav></div>
+			<div className="device-summary"><div>{status.device}</div><div>{status.time?.local ?? status.datetime}</div><div>{status.network?.ipv4?.address ?? 'no management address'}</div>{Object.entries(status.temperature ?? {}).map(([type, values]) => <div key={type}>{type}: {(values ?? []).map(value => Number(value).toFixed(1)).join(', ')} °C</div>)}</div>
+			<div className={`connection-state ${connected ? 'connected' : 'disconnected'}`}>{connected ? `Connected as ${auth.username} (${auth.role})` : 'Disconnected'}</div>
+			{status?.security?.default_password_active && <div className="warning">The root password is still set to the switch serial number.</div>}
 			{error && <div className="error">{error}</div>}{notice && <div className="notice">{notice}</div>}
 			{(status.errors ?? []).map((item, index) => <div className="warning" key={`${item.source}-${index}`}>{item.source}: {item.message}</div>)}
-		</div>
-		{config && <div><NetworkPanel config={config} status={status} updateConfig={updateRoot} diff={diff} /><Ports config={config} status={status} poe={poeSupported} selectedPort={selectedPort} onSelectPort={selectPort} /><Table ports={config.ports} updatePort={updatePort} updatePortMulti={updatePortMulti} status={status} poe={poeSupported} diff={diff} selectedPort={selectedPort} /></div>}
-		{hasDiff && canWriteConfig && <aside className="unsaved-changes" role="status" aria-live="assertive"><div className="unsaved-copy"><strong>Unapplied configuration changes</strong><span>Apply these changes before leaving the page, or discard them to restore the switch's current configuration.</span></div><div className="unsaved-actions"><button type="button" className="discard-button" onClick={discardChanges} disabled={uploading}>Discard changes</button><button type="button" className="apply-button" onClick={uploadConfig} disabled={!connected || uploading}>{uploading ? 'Applying…' : 'Apply changes'}</button></div></aside>}
+		</header>
+		{config && <main className="front-panel-view"><Ports config={config} status={status} poe={poe} selectedPort={selectedPort} onSelectPort={setSelectedPort} /><p className="front-panel-hint">Select a port to open its focused configuration window.</p></main>}
+		{client && config && <PortEditor client={client} selectedPort={selectedPort} onSelect={setSelectedPort} onClose={() => setSelectedPort(null)} config={config} status={status} poe={poe} updatePort={updatePort} updatePortMulti={updatePortMulti} diff={diff} />}
+		{client && <CompatibilityNotice client={client} notice={status?.compatibility_notice} onDismiss={() => setStatus(previous => ({ ...previous, compatibility_notice: { ...previous.compatibility_notice, required: false } }))} />}
+		{hasDiff && canWrite && <aside className="unsaved-changes" role="status"><div className="unsaved-copy"><strong>Unapplied configuration changes</strong><span>Apply these changes or discard them to restore the current switch configuration.</span></div><div className="unsaved-actions"><button onClick={discardChanges} disabled={uploading}>Discard Changes</button><button className="apply-button" onClick={uploadConfig} disabled={!connected || uploading}>{uploading ? 'Applying…' : 'Apply Changes'}</button></div></aside>}
 	</div>;
 }
 

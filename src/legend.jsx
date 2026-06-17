@@ -20,14 +20,7 @@ export default function Legend({ poe }) {
 
     return (
         <span>
-            <button
-                title="information"
-                onClick={() => dialogRef.current.showModal()}>
-                <svg id="i-info" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentcolor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
-                    <path d="M16 14 L16 23 M16 8 L16 10" />
-                    <circle cx="16" cy="16" r="14" />
-                </svg>
-            </button>
+            <button className="toolbar-button" title="Port-state legend" onClick={() => dialogRef.current.showModal()}>Legend</button>
             <dialog className="legend" ref={dialogRef} onClick={(e) => {
                 if (e.target === dialogRef.current) dialogRef.current.close();
             }}>

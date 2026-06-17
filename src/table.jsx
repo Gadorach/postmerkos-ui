@@ -8,13 +8,22 @@ const SECTIONS = [
 		label: 'Port',
 		defaultExpanded: true,
 		columns: (poe) => [
-			{ key: 'speed', label: 'speed', tooltip: 'Current link speed in Mbps' },
+			{ key: 'speed', label: 'speed', sortable: true, tooltip: 'Current link speed in Mbps' },
 			...(poe ? [
-				{ key: 'power', label: 'power', tooltip: 'Power consumption in watts' },
-				{ key: 'poe', label: 'poe', tooltip: 'Power over Ethernet standard' },
+				{ key: 'power', label: 'power', sortable: true, tooltip: 'Power consumption in watts' },
+				{ key: 'poe', label: 'poe', sortable: true, tooltip: 'Power over Ethernet standard' },
 				{ key: 'poe_policy', label: 'policy', tooltip: 'Normal detection or boot-prune energy-saving policy' },
 			] : []),
 			{ key: 'storm', label: 'storm', tooltip: 'Limits broadcast/multicast flooding' },
+		],
+	},
+	{
+		key: 'clients',
+		label: 'Clients',
+		defaultExpanded: false,
+		columns: () => [
+			{ key: 'client_count', label: 'count', sortable: true, tooltip: 'Number of connected clients' },
+			{ key: 'client_detail', label: 'MAC / IP', tooltip: 'Connected client MAC, IP and last-seen age' },
 		],
 	},
 	{
@@ -45,14 +54,84 @@ const SECTIONS = [
 // Check if a vlans string represents multiple VLANs (comma-separated or range)
 const isMultipleVlans = (v) => /[,\-]/.test(String(v ?? ''));
 
+const formatAge = (seconds) => {
+	if (seconds == null || !Number.isFinite(seconds)) return '—';
+	if (seconds < 60) return `${Math.round(seconds)}s`;
+	if (seconds < 3600) return `${Math.floor(seconds / 60)}m`;
+	return `${Math.floor(seconds / 3600)}h`;
+};
+
+const sortValue = (port, portNum, col, status, poe) => {
+	const p = mergePortState(port, status?.ports?.[portNum], status?.clients?.[portNum] ?? []);
+	switch (col) {
+		case 'port': return Number(portNum);
+		case 'name': return (p.name ?? '').toLowerCase();
+		case 'speed': return p.link?.speed ?? 0;
+		case 'power': return poe ? (status?.ports?.[portNum]?.poe?.power ?? -1) : -1;
+		case 'poe': return p.poe?.enabled ? (p.poe?.mode === 'at' ? 2 : 1) : 0;
+		case 'client_count': return (status?.clients?.[portNum] ?? []).length;
+		default: return Number(portNum);
+	}
+};
+
+function FilterBar({ filters, onChange }) {
+	const set = (key, value) => onChange({ ...filters, [key]: value });
+	return (
+		<div className="filter-bar">
+			<label>Link: <select value={filters.link} onChange={e => set('link', e.target.value)}>
+				<option value="all">all</option>
+				<option value="up">up</option>
+				<option value="down">down</option>
+			</select></label>
+			<label>Speed: <select value={filters.speed} onChange={e => set('speed', e.target.value)}>
+				<option value="all">any</option>
+				<option value="10">10M</option>
+				<option value="100">100M</option>
+				<option value="1000">1G</option>
+				<option value="10000">10G</option>
+			</select></label>
+			<label>PoE: <select value={filters.poe} onChange={e => set('poe', e.target.value)}>
+				<option value="all">any</option>
+				<option value="powered">powered</option>
+				<option value="unpowered">unpowered</option>
+			</select></label>
+			<label><input type="checkbox" checked={filters.hasClients} onChange={e => set('hasClients', e.target.checked)} /> has clients</label>
+		</div>
+	);
+}
+
+const DEFAULT_FILTERS = { link: 'all', speed: 'all', poe: 'all', hasClients: false };
+
 export default function Table({ ports, status, poe, updatePort, updatePortMulti, diff, selectedPort }) {
 	const [sections, setSections] = useState(() => {
 		const init = {};
 		SECTIONS.forEach(s => { init[s.key] = s.defaultExpanded; });
 		return init;
 	});
+	const [filters, setFilters] = useState(DEFAULT_FILTERS);
+	const [sort, setSort] = useState({ column: null, direction: 'asc' });
 
 	const toggle = (key) => setSections(prev => ({ ...prev, [key]: !prev[key] }));
+
+	const toggleSort = (col) => {
+		setSort(prev => {
+			if (prev.column === col) {
+				if (prev.direction === 'asc') return { column: col, direction: 'desc' };
+				return { column: null, direction: 'asc' };
+			}
+			return { column: col, direction: 'asc' };
+		});
+	};
+
+	const sortIndicator = (col) => {
+		if (sort.column !== col) return '';
+		return sort.direction === 'asc' ? ' ▴' : ' ▾';
+	};
+
+	const stickyHeaderSort = (col) => ({
+		className: `sticky-col ${col === 'port' ? 'sticky-col-1' : 'sticky-col-2'} sortable`,
+		onClick: () => toggleSort(col),
+	});
 
 	const diffStyle = (port, field) => {
 		const parts = field.split('.');
@@ -97,15 +176,44 @@ export default function Table({ ports, status, poe, updatePort, updatePortMulti,
 		cols: s.columns(poe),
 	}));
 
+	let portKeys = Object.keys(ports);
+
+	portKeys = portKeys.filter(port => {
+		const runtime = status?.ports?.[port];
+		const established = runtime?.link?.established;
+		const speed = runtime?.link?.speed;
+		const power = runtime?.poe?.power;
+		const clients = status?.clients?.[port] ?? [];
+
+		if (filters.link === 'up' && !established) return false;
+		if (filters.link === 'down' && established) return false;
+		if (filters.speed !== 'all' && String(speed) !== filters.speed) return false;
+		if (filters.poe === 'powered' && !(power > 0)) return false;
+		if (filters.poe === 'unpowered' && power > 0) return false;
+		if (filters.hasClients && clients.length === 0) return false;
+		return true;
+	});
+
+	if (sort.column) {
+		const dir = sort.direction === 'asc' ? 1 : -1;
+		portKeys.sort((a, b) => {
+			const va = sortValue(ports[a], a, sort.column, status, poe);
+			const vb = sortValue(ports[b], b, sort.column, status, poe);
+			const cmp = typeof va === 'string' ? va.localeCompare(vb) : (va < vb ? -1 : va > vb ? 1 : 0);
+			return cmp !== 0 ? cmp * dir : Number(a) - Number(b);
+		});
+	}
+
 	return (
 		<div className="table-scroll">
+			<FilterBar filters={filters} onChange={setFilters} />
 			<table className="port-table">
 				<thead>
 					<tr>
-						<th rowSpan="2" className="sticky-col sticky-col-1"
-							title="Port number — click to enable/disable">port</th>
-						<th rowSpan="2" className="sticky-col sticky-col-2"
-							title="Custom label for this port">name</th>
+						<th rowSpan="2" {...stickyHeaderSort('port')}
+							title="Sort by port number">port{sortIndicator('port')}</th>
+						<th rowSpan="2" {...stickyHeaderSort('name')}
+							title="Sort by port name">name{sortIndicator('name')}</th>
 						{expandedSections.map(s => (
 							<th key={s.key}
 								colSpan={s.expanded ? s.cols.length : 1}
@@ -124,20 +232,24 @@ export default function Table({ ports, status, poe, updatePort, updatePortMulti,
 						{expandedSections.map(s =>
 							s.expanded
 								? s.cols.map(col => (
-									<th key={`${s.key}-${col.key}`} title={col.tooltip}>{col.label}</th>
+									<th key={`${s.key}-${col.key}`} title={col.tooltip}
+										className={col.sortable ? 'sortable' : ''}
+										onClick={col.sortable ? () => toggleSort(col.key) : undefined}
+									>{col.label}{col.sortable ? sortIndicator(col.key) : ''}</th>
 								))
 								: <th key={`${s.key}-collapsed`} className="collapsed-placeholder" />
 						)}
 					</tr>
 				</thead>
 				<tbody>
-					{Object.keys(ports).map(port => {
-						let p = mergePortState(ports[port], status?.ports?.[port]);
+					{portKeys.map(port => {
+						const clients = status?.clients?.[port] ?? [];
+						let p = mergePortState(ports[port], status?.ports?.[port], clients);
 						let enabled = p.enabled ?? true;
 						let established = p.link?.established;
 						let poeMode = p.poe?.mode ?? 'at';
 						let poeEnabled = p.poe?.enabled ?? false;
-					let poePolicy = p.poe?.policy ?? 'normal';
+						let poePolicy = p.poe?.policy ?? 'normal';
 						let poeCapable = status?.ports?.[port]?.capabilities?.poe ?? Boolean(p.poe);
 						let vlanMode = p.vlan?.mode ?? 'access';
 						let isAccess = vlanMode === 'access';
@@ -165,9 +277,9 @@ export default function Table({ ports, status, poe, updatePort, updatePortMulti,
 
 								{/* port section */}
 								{sections.port ? (<>
-									<td>{p.link?.speed}</td>
-									{poe && <td>{poeCapable ? (status?.ports?.[port]?.poe?.power?.toFixed(2) ?? '—') : '—'}</td>}
-									{poe && <td className={`${diffStyle(port, "poe.enabled") ?? ''} ${diffStyle(port, "poe.mode") ?? ''}`}>
+									<td className="section-port section-first">{p.link?.speed}</td>
+									{poe && <td className="section-port">{poeCapable ? (status?.ports?.[port]?.poe?.power?.toFixed(2) ?? '—') : '—'}</td>}
+									{poe && <td className={`section-port ${diffStyle(port, "poe.enabled") ?? ''} ${diffStyle(port, "poe.mode") ?? ''}`}>
 										{poeCapable ? <span className="toggle">
 											<button className={!poeEnabled ? 'active' : ''} title="Disable PoE"
 												onClick={() => updatePort(port, 'poe.enabled', false)}>off</button>
@@ -178,10 +290,10 @@ export default function Table({ ports, status, poe, updatePort, updatePortMulti,
 											))}
 										</span> : '—'}
 									</td>}
-									{poe && <td className={diffStyle(port, "poe.policy")}>
+									{poe && <td className={`section-port ${diffStyle(port, "poe.policy") ?? ''}`}>
 										{poeCapable ? <select value={poePolicy} onChange={event => updatePort(port, 'poe.policy', event.currentTarget.value)} title="Boot-prune disables ports unused during startup; later connections require manual re-enable"><option value="normal">normal</option><option value="boot-prune">boot-prune</option></select> : '—'}
 									</td>}
-									<td className={diffStyle(port, 'storm_control')}>
+									<td className={`section-port ${diffStyle(port, 'storm_control') ?? ''}`}>
 										<span className="toggle">
 											<button
 												className={p.storm_control ? 'active' : ''}
@@ -191,22 +303,40 @@ export default function Table({ ports, status, poe, updatePort, updatePortMulti,
 									</td>
 								</>) : <td />}
 
+								{/* clients section */}
+								{sections.clients ? (<>
+									<td className="section-clients section-first client-count">{clients.length || '—'}</td>
+									<td className="section-clients client-detail">
+										{clients.length > 0 ? (
+											<div className="client-list">
+												{clients.map((c, i) => (
+													<div key={i} className="client-entry">
+														<a className="client-mac" href={`https://maclookup.app/search/result?mac=${c.mac}`} target="_blank" rel="noopener noreferrer">{c.mac}</a>
+														<span className="client-ip">{c.ip}</span>
+														<span className="client-age">{formatAge(c.age)}</span>
+													</div>
+												))}
+											</div>
+										) : '—'}
+									</td>
+								</>) : <td />}
+
 								{/* vlan section */}
 								{sections.vlan ? (<>
-									<td className={vlansDiff(port)}>
+									<td className={`section-vlan section-first ${vlansDiff(port) ?? ''}`}>
 										<input
 											value={vlansValue}
 											onChange={e => handleVlansChange(port, e.target.value, nativeValue)}
 										/>
 									</td>
-									<td className={diffStyle(port, "vlan.untagged_vid")}>
+									<td className={`section-vlan ${diffStyle(port, "vlan.untagged_vid") ?? ''}`}>
 										<input className="vlan-input" type="number" min="1" max="4094"
 											disabled={isAccess}
 											value={nativeValue}
 											onChange={e => handleNativeChange(port, e.target.value, vlansValue)}
 										/>
 									</td>
-									<td className={diffStyle(port, "vlan.ingress_filter")}>
+									<td className={`section-vlan ${diffStyle(port, "vlan.ingress_filter") ?? ''}`}>
 										<span className="toggle">
 											<button
 												className={p.vlan?.ingress_filter ? 'active' : ''}
@@ -218,7 +348,7 @@ export default function Table({ ports, status, poe, updatePort, updatePortMulti,
 
 								{/* stp section */}
 								{sections.stp ? (<>
-									<td className={diffStyle(port, "stp.enabled")}>
+									<td className={`section-stp section-first ${diffStyle(port, "stp.enabled") ?? ''}`}>
 										<span className="toggle">
 											<button
 												className={stpEnabled ? 'active' : ''}
@@ -226,19 +356,19 @@ export default function Table({ ports, status, poe, updatePort, updatePortMulti,
 											/>
 										</span>
 									</td>
-									<td className={diffStyle(port, "stp.priority")}>
+									<td className={`section-stp ${diffStyle(port, "stp.priority") ?? ''}`}>
 										<input className="vlan-input" type="number" min="0" max="255"
 											value={p.stp?.priority}
 											onChange={e => updatePort(port, 'stp.priority', Number(e.target.value))}
 										/>
 									</td>
-									<td className={diffStyle(port, "stp.cost")}>
+									<td className={`section-stp ${diffStyle(port, "stp.cost") ?? ''}`}>
 										<input className="vlan-input" type="number" min="0"
 											value={p.stp?.cost}
 											onChange={e => updatePort(port, 'stp.cost', Number(e.target.value))}
 										/>
 									</td>
-									<td className={diffStyle(port, "stp.edge")}>
+									<td className={`section-stp ${diffStyle(port, "stp.edge") ?? ''}`}>
 										<span className="toggle">
 											<button
 												className={p.stp?.edge ? 'active' : ''}
@@ -246,8 +376,8 @@ export default function Table({ ports, status, poe, updatePort, updatePortMulti,
 											/>
 										</span>
 									</td>
-									<td>{p.stp?.state}</td>
-									<td>{p.stp?.role}</td>
+									<td className="section-stp">{p.stp?.state}</td>
+									<td className="section-stp">{p.stp?.role}</td>
 								</>) : <td />}
 							</tr>
 						);

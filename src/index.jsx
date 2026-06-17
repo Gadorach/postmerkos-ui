@@ -107,7 +107,7 @@ function App() {
 	const poeSupported = Boolean(status?.capabilities?.poe?.supported);
 	return <div>
 		<div id="heading">
-			<div className="heading-bar"><div><h1>postmerkOS</h1><span className="version">{/* VERSION */} dev {/* NOTE: do not remove; this is replaced in CI */}</span></div>
+			<div className="heading-bar"><div><h1>postmerkOS</h1><span className="version">{status?.release?.version ?? 'unknown firmware'}</span></div>
 				<div className="heading-actions">{config && client && <div id="buttons">
 					<Button onClick={uploadConfig} isLoading={uploading} disabled={!connected || uploading || !hasDiff} title={connected ? 'upload config' : 'disconnected'}>apply</Button>
 					<button title="view config" onClick={() => dialogRef.current.showModal()}>config</button>
@@ -116,7 +116,8 @@ function App() {
 					<button title={`sign out ${auth.username}`} onClick={logout}>logout</button>
 				</div>}</div></div>
 			<div className="device-summary"><div>{status.device}</div><div>{status.datetime}</div>{Object.keys(status.temperature ?? {}).map(type => <div key={type}>{type}: {(status.temperature[type] ?? []).map((c, i) => <span key={i}>{Number(c).toFixed(1)} </span>)}(<span className="status-temp">°C</span>)</div>)}</div>
-			<div className={`connection-state ${connected ? 'connected' : 'disconnected'}`}>{connected ? `connected as ${auth.username}` : 'disconnected'}</div>
+			<div className={`connection-state ${connected ? 'connected' : 'disconnected'}`}>{connected ? `connected as ${auth.username} (${auth.role ?? 'unknown role'})` : 'disconnected'}</div>
+			{status?.capabilities?.compatibility === 'untested' && <div className="warning">This switch model is currently untested with this firmware. Compatibility reporting will be available from the system information menu.</div>}
 			{error && <div className="error">{error}</div>}{notice && <div className="notice">{notice}</div>}
 			{(status.errors ?? []).map((item, index) => <div className="warning" key={`${item.source}-${index}`}>{item.source}: {item.message}</div>)}
 		</div>

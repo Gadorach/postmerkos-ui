@@ -79,7 +79,7 @@ export function FirmwareTool({ client, connected }) {
 	</DialogButton>;
 }
 
-export function BackupTool({ client, config }) {
+export function BackupTool({ client, config, canRestore = false }) {
 	const [restoreFile, setRestoreFile] = useState(null);
 	const [notice, setNotice] = useState('');
 	const [error, setError] = useState('');
@@ -99,13 +99,13 @@ export function BackupTool({ client, config }) {
 		{({ close }) => <div className="tool-dialog backup-dialog">
 			<div className="dialog-heading"><h2>Configuration backup</h2><button onClick={close}>close</button></div>
 			<section><h3>Export</h3><p>Backups are plain JSON files.</p><button onClick={backup} disabled={!config}>Download backup</button></section>
-			<section><h3>Restore</h3><label>Backup file<input type="file" accept=".json,application/json" onChange={event => setRestoreFile(event.currentTarget.files?.[0] ?? null)} /></label><button onClick={restore} disabled={!restoreFile || working}>{working ? 'restoring…' : 'Validate and restore'}</button></section>
+			{canRestore && <section><h3>Restore</h3><label>Backup file<input type="file" accept=".json,application/json" onChange={event => setRestoreFile(event.currentTarget.files?.[0] ?? null)} /></label><button onClick={restore} disabled={!restoreFile || working}>{working ? 'restoring…' : 'Validate and restore'}</button></section>}
 			{notice && <div className="notice">{notice}</div>}{error && <div className="error">{error}</div>}
 		</div>}
 	</DialogButton>;
 }
 
-export function AccountTool({ client, auth }) {
+export function AccountTool({ client, auth, canManage = false }) {
 	const [username, setUsername] = useState(auth?.username ?? 'root');
 	const [current, setCurrent] = useState('');
 	const [replacement, setReplacement] = useState('');
@@ -122,7 +122,7 @@ export function AccountTool({ client, auth }) {
 		{({ close }) => <div className="tool-dialog account-dialog">
 			<div className="dialog-heading"><h2>Account password</h2><button onClick={close}>close</button></div>
 			<form onSubmit={change}>
-				<label>Account<select value={username} onChange={event => setUsername(event.currentTarget.value)}>{(auth?.users ?? [{ username: auth?.username }]).filter(user => user?.username).map(user => <option key={user.username} value={user.username}>{user.username}</option>)}</select></label>
+				<label>Account<select value={username} onChange={event => setUsername(event.currentTarget.value)}>{(canManage ? (auth?.users ?? []) : [{ username: auth?.username }]).filter(user => user?.username).map(user => <option key={user.username} value={user.username}>{user.username}</option>)}</select></label>
 				<label>Current password<input type="password" autoComplete="current-password" value={current} onInput={event => setCurrent(event.currentTarget.value)} /></label>
 				<label>New password<input type="password" autoComplete="new-password" value={replacement} onInput={event => setReplacement(event.currentTarget.value)} /></label>
 				<label>Confirm new password<input type="password" autoComplete="new-password" value={confirmation} onInput={event => setConfirmation(event.currentTarget.value)} /></label>

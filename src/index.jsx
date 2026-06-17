@@ -104,25 +104,28 @@ function App() {
 
 	if (!auth) return <Login connected={connected} onLogin={login} error={error} />;
 	const client = clientRef.current;
+	const hasCapability = capability => (auth?.capabilities ?? []).includes(capability);
+	const canWriteConfig = hasCapability('switching.write') || hasCapability('network.write');
 	const poeSupported = Boolean(status?.capabilities?.poe?.supported);
 	return <div>
 		<div id="heading">
 			<div className="heading-bar"><div><h1>postmerkOS</h1><span className="version">{status?.release?.version ?? 'unknown firmware'}</span></div>
 				<div className="heading-actions">{config && client && <div id="buttons">
-					<Button onClick={uploadConfig} isLoading={uploading} disabled={!connected || uploading || !hasDiff} title={connected ? 'upload config' : 'disconnected'}>apply</Button>
+					{canWriteConfig && <Button onClick={uploadConfig} isLoading={uploading} disabled={!connected || uploading || !hasDiff} title={connected ? 'upload config' : 'disconnected'}>apply</Button>}
 					<button title="view config" onClick={() => dialogRef.current.showModal()}>config</button>
 					<dialog className="config-preview" ref={dialogRef} onClick={event => { if (event.target === dialogRef.current) dialogRef.current.close(); }}><textarea readOnly value={JSON.stringify(config, null, 2)} /></dialog>
-					<TerminalTool client={client} /><FirmwareTool client={client} connected={connected} /><BackupTool client={client} config={configOnDisk} /><AccountTool client={client} auth={auth} /><Legend poe={poeSupported} />
+					{hasCapability('terminal.exec') && <TerminalTool client={client} />}{hasCapability('firmware.update') && <FirmwareTool client={client} connected={connected} />}<BackupTool client={client} config={configOnDisk} canRestore={hasCapability('config.restore')} /><AccountTool client={client} auth={auth} canManage={hasCapability('users.manage')} /><Legend poe={poeSupported} />
 					<button title={`sign out ${auth.username}`} onClick={logout}>logout</button>
 				</div>}</div></div>
 			<div className="device-summary"><div>{status.device}</div><div>{status.datetime}</div>{Object.keys(status.temperature ?? {}).map(type => <div key={type}>{type}: {(status.temperature[type] ?? []).map((c, i) => <span key={i}>{Number(c).toFixed(1)} </span>)}(<span className="status-temp">°C</span>)</div>)}</div>
 			<div className={`connection-state ${connected ? 'connected' : 'disconnected'}`}>{connected ? `connected as ${auth.username} (${auth.role ?? 'unknown role'})` : 'disconnected'}</div>
 			{status?.capabilities?.compatibility === 'untested' && <div className="warning">This switch model is currently untested with this firmware. Compatibility reporting will be available from the system information menu.</div>}
+			{status?.security?.default_password_active && <div className="warning">The root password is still set to the switch serial number. Change it from the account menu when practical.</div>}
 			{error && <div className="error">{error}</div>}{notice && <div className="notice">{notice}</div>}
 			{(status.errors ?? []).map((item, index) => <div className="warning" key={`${item.source}-${index}`}>{item.source}: {item.message}</div>)}
 		</div>
 		{config && <div><NetworkPanel config={config} status={status} updateConfig={updateRoot} diff={diff} /><Ports config={config} status={status} poe={poeSupported} selectedPort={selectedPort} onSelectPort={selectPort} /><Table ports={config.ports} updatePort={updatePort} updatePortMulti={updatePortMulti} status={status} poe={poeSupported} diff={diff} selectedPort={selectedPort} /></div>}
-		{hasDiff && <aside className="unsaved-changes" role="status" aria-live="assertive"><div className="unsaved-copy"><strong>Unapplied configuration changes</strong><span>Apply these changes before leaving the page, or discard them to restore the switch's current configuration.</span></div><div className="unsaved-actions"><button type="button" className="discard-button" onClick={discardChanges} disabled={uploading}>Discard changes</button><button type="button" className="apply-button" onClick={uploadConfig} disabled={!connected || uploading}>{uploading ? 'Applying…' : 'Apply changes'}</button></div></aside>}
+		{hasDiff && canWriteConfig && <aside className="unsaved-changes" role="status" aria-live="assertive"><div className="unsaved-copy"><strong>Unapplied configuration changes</strong><span>Apply these changes before leaving the page, or discard them to restore the switch's current configuration.</span></div><div className="unsaved-actions"><button type="button" className="discard-button" onClick={discardChanges} disabled={uploading}>Discard changes</button><button type="button" className="apply-button" onClick={uploadConfig} disabled={!connected || uploading}>{uploading ? 'Applying…' : 'Apply changes'}</button></div></aside>}
 	</div>;
 }
 

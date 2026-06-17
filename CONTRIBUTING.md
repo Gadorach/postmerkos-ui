@@ -1,26 +1,25 @@
 # Contributing
 
-Pull requests welcome! For major changes, probably best to open an issue first to discuss what you would like to change.
+Open an issue before large architectural changes so hardware assumptions, image-size effects, and backend compatibility can be reviewed first. Focused fixes and documentation improvements are welcome as pull requests.
 
 ## Development
 
-(optionally) start a dev shell with
+```sh
+npm ci
+npm run dev
+```
 
-    nix develop
+Open the development URL printed by Vite. The default development server provides mock configd responses. Set `SWITCH_HOST` only when intentionally connecting to a live switch.
 
-Install dependencies
+Before submitting:
 
-    npm i
+```sh
+npm run lint
+npm run build
+```
 
-For live-reloading:
+Backend protocol changes must remain compatible with the optional-web configd build and should update the module documentation.
 
-    [SWITCH_HOST=<switch>] npm run dev
+## Releases
 
-Then navigate to http://localhost:8080.
-
-> **WARN**: specifying the `SWITCH_HOST` environment variable disables the mock WS server in lieu of a live device
-
-
-## Releasing
-
-[A GitHub action](./.github/workflows/main.yaml)) will create a new release whenever a new version is specified in [`CHANGELOG.md`](./CHANGELOG.md).
+Release notes are maintained in [`docs/history/changelog.md`](docs/history/changelog.md). The release workflow builds with Node/npm and publishes the production assets as a ZIP archive.

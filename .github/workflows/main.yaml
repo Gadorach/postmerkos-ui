@@ -4,7 +4,7 @@ on:
     branches:
       - main
     paths:
-      - CHANGELOG.md
+      - docs/history/changelog.md
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -12,14 +12,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Get version from CHANGELOG
+      - name: Get version from changelog
         id: version
         run: |
-          VERSION=$(grep -oP '## \[\K[^\]]+' CHANGELOG.md | grep -v Unreleased | head -1)
+          CHANGELOG=docs/history/changelog.md
+          VERSION=$(grep -oP '## \[\K[^]]+' "$CHANGELOG" | grep -v Unreleased | head -1)
+          test -n "$VERSION"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-
-          # extract release notes for the first versioned heading, skipping the header line
-          BODY=$(awk '/^## \[/ && !/Unreleased/{if(n++)exit;next}n && !/^## \[.*Unreleased/' CHANGELOG.md)
+          BODY=$(awk '/^## \[/ && !/Unreleased/{if(n++)exit;next}n && !/^## \[.*Unreleased/' "$CHANGELOG")
           {
             echo "body<<RELEASE_EOF"
             echo "$BODY"
@@ -35,25 +35,24 @@ jobs:
             echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Install Nix
+      - name: Set up Node
         if: steps.check.outputs.exists == 'false'
-        uses: cachix/install-nix-action@v31
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
 
       - name: Build
         if: steps.check.outputs.exists == 'false'
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
-          nix develop --command bash -c '
-            sed -i "s|{/\* VERSION \*/}.*|${VERSION}|g" src/index.jsx
-
-            npm ci
-            npm run build
-
-            NAME=${GITHUB_REPOSITORY##*/}
-            mv build $NAME
-            zip -r $NAME.zip $NAME
-          '
+          npm ci
+          npm run lint
+          npm run build
+          NAME=${GITHUB_REPOSITORY##*/}
+          mv build "$NAME"
+          zip -r "$NAME.zip" "$NAME"
 
       - name: Release
         if: steps.check.outputs.exists == 'false'

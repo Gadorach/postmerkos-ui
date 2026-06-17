@@ -57,6 +57,7 @@ function wsPlugin() {
 						else if (msg.type === 'get_status') send('status', statusData, msg.id);
 						else if (msg.type === 'config' && msg.data && typeof msg.data === 'object') { merge(configData, msg.data); send('ack', { message: 'Configuration accepted', applied: 1, warnings: [] }, msg.id); send('config', configData); }
 						else if (msg.type === 'replace_config' && msg.data && typeof msg.data === 'object') { for (const key of Object.keys(configData)) delete configData[key]; Object.assign(configData, msg.data); send('ack', { message: 'Configuration replaced', applied: 1, warnings: [] }, msg.id); send('config', configData); }
+						else if (msg.type === 'terminal_start') { const token = `mock-${Date.now()}`; send('terminal_started', { token, message: 'Terminal command started' }, msg.id); setTimeout(() => send('terminal_output', { token, output: `mock: ${msg.data?.command ?? ''}\n` }), 25); setTimeout(() => send('terminal_exit', { token, exit_code: 0, timed_out: false, truncated: false }), 50); }
 						else if (msg.type === 'terminal_exec') send('terminal', { output: `mock: ${msg.data?.command ?? ''}\n`, exit_code: 0, timed_out: false, truncated: false }, msg.id);
 						else if (msg.type === 'password_change') send('ack', { message: 'Development mock password updated' }, msg.id);
 						else if (msg.type === 'firmware_status') send('firmware_status', { state: 'idle', stage: 'idle', progress: 0, message: 'No update running' }, msg.id);

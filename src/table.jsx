@@ -11,7 +11,8 @@ const SECTIONS = [
 			{ key: 'speed', label: 'speed', tooltip: 'Current link speed in Mbps' },
 			...(poe ? [
 				{ key: 'power', label: 'power', tooltip: 'Power consumption in watts' },
-				{ key: 'poe', label: 'poe', tooltip: 'Power over Ethernet mode' },
+				{ key: 'poe', label: 'poe', tooltip: 'Power over Ethernet standard' },
+				{ key: 'poe_policy', label: 'policy', tooltip: 'Normal detection or boot-prune energy-saving policy' },
 			] : []),
 			{ key: 'storm', label: 'storm', tooltip: 'Limits broadcast/multicast flooding' },
 		],
@@ -136,6 +137,7 @@ export default function Table({ ports, status, poe, updatePort, updatePortMulti,
 						let established = p.link?.established;
 						let poeMode = p.poe?.mode ?? 'at';
 						let poeEnabled = p.poe?.enabled ?? false;
+					let poePolicy = p.poe?.policy ?? 'normal';
 						let poeCapable = status?.ports?.[port]?.capabilities?.poe ?? Boolean(p.poe);
 						let vlanMode = p.vlan?.mode ?? 'access';
 						let isAccess = vlanMode === 'access';
@@ -175,6 +177,9 @@ export default function Table({ ports, status, poe, updatePort, updatePortMulti,
 													onClick={() => updatePortMulti(port, { 'poe.enabled': true, 'poe.mode': mode })}>{label}</button>
 											))}
 										</span> : '—'}
+									</td>}
+									{poe && <td className={diffStyle(port, "poe.policy")}>
+										{poeCapable ? <select value={poePolicy} onChange={event => updatePort(port, 'poe.policy', event.currentTarget.value)} title="Boot-prune disables ports unused during startup; later connections require manual re-enable"><option value="normal">normal</option><option value="boot-prune">boot-prune</option></select> : '—'}
 									</td>}
 									<td className={diffStyle(port, 'storm_control')}>
 										<span className="toggle">

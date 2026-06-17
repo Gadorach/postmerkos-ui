@@ -701,3 +701,49 @@ tbody tr.selected-port-row td:last-child { box-shadow: inset -2px 0 0 var(--focu
 	.unsaved-actions button { width: 100%; }
 }
 @media (max-width: 430px) { .unsaved-actions { grid-template-columns: 1fr; } }
+
+/* Phase 6 management layout */
+.heading-bar { display: flex; align-items: flex-start; gap: 1rem; justify-content: space-between; }
+.heading-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: flex-end; }
+.toolbar-button { min-width: 7.25rem; min-height: 2.55rem; display: inline-flex; align-items: center; justify-content: center; font-weight: 600; text-transform: none; }
+.management-dialog { width: min(96vw, 96rem); max-width: none; border: 1px solid var(--border); border-radius: 10px; padding: 0; background: var(--bg); color: var(--text); }
+.management-dialog::backdrop { background: rgba(16, 20, 28, 0.72); }
+.wide-dialog { width: min(80rem, 92vw); }
+.extra-wide-dialog { width: min(94rem, 95vw); }
+.dialog-tabs { display: flex; gap: 0.35rem; flex-wrap: wrap; margin: 0 0 1rem; padding-bottom: 0.65rem; border-bottom: 1px solid var(--border); }
+.dialog-tabs button { background: transparent; border-color: var(--border); }
+.dialog-tabs button.active { background: var(--button-active); color: var(--text-bright); }
+.tab-pane { display: grid; gap: 0.85rem; min-height: 12rem; }
+.tab-pane > section, .system-card, .clone-pane, .tab-pane fieldset { border: 1px solid var(--border); border-radius: 7px; padding: 0.85rem; background: var(--bg-alt); }
+.tab-pane h3 { margin: 0 0 0.35rem; }
+.tab-pane pre { max-height: 28rem; overflow: auto; background: #11151d; padding: 0.8rem; border-radius: 6px; white-space: pre-wrap; }
+.form-grid, .system-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); gap: 0.7rem; }
+.system-grid { margin: 0; }
+.system-grid > div { background: var(--bg-alt); padding: 0.6rem; border-radius: 6px; }
+.system-grid dt { color: var(--text-muted); font-size: 0.82rem; }
+.system-grid dd { margin: 0.2rem 0 0; overflow-wrap: anywhere; }
+.front-panel-view { display: grid; gap: 0.75rem; justify-items: center; padding: 1rem; }
+.front-panel-hint { color: var(--text-muted); margin: 0; }
+.port-editor-dialog { width: min(94rem, 96vw); }
+.port-navigation { display: flex; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.8rem; }
+.all-ports-pane { max-height: 67vh; overflow: auto; }
+.all-ports-pane .table-scroll { max-height: 62vh; overflow: auto; }
+.clone-pane { margin-bottom: 0.9rem; }
+.clone-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: 0.35rem; }
+.target-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(3.2rem, 1fr)); gap: 0.35rem; margin: 0.75rem 0; }
+.target-grid button { min-width: 0; }
+.target-grid button.active { background: var(--button-active); }
+.account-grid { display: grid; gap: 0.4rem; }
+.account-row { display: grid; grid-template-columns: minmax(8rem, 1fr) minmax(10rem, 12rem) auto; align-items: center; gap: 0.5rem; padding: 0.45rem; border-bottom: 1px solid var(--border); }
+.switching-pane fieldset { margin: 0; }
+.firmware-pane details { border: 1px solid var(--border); border-radius: 6px; padding: 0.6rem; }
+.compatibility-dialog { width: min(50rem, 92vw); }
+@media (max-width: 720px) {
+  .heading-bar { flex-direction: column; }
+  .heading-actions { width: 100%; display: grid; grid-template-columns: 1fr 1fr; }
+  .toolbar-button { width: 100%; }
+  .account-row { grid-template-columns: 1fr; }
+  .port-navigation { display: grid; grid-template-columns: 1fr; }
+}
+.json-editor { width: 100%; box-sizing: border-box; min-height: 12rem; resize: vertical; background: #11151d; color: #d8dee9; border: 1px solid var(--border); border-radius: 6px; padding: 0.7rem; font-family: monospace; }
+.button-row { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.55rem; }

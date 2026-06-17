@@ -1,3 +1,5 @@
+const formatTimestamp = value => value ? new Date(Number(value) * 1000).toLocaleString() : '—';
+
 const formatSeconds = value => {
 	const seconds = Number(value || 0);
 	if (!seconds) return '—';
@@ -51,8 +53,10 @@ export default function NetworkPanel({ config, status, updateConfig, diff }) {
 				<div><dt>Source</dt><dd>{runtime.source ?? '—'}</dd></div>
 				<div><dt>Gateway</dt><dd>{runtime.gateway ?? '—'}</dd></div>
 				<div><dt>Broadcast</dt><dd>{runtime.broadcast ?? '—'}</dd></div>
+				<div><dt>Lease acquired</dt><dd>{formatTimestamp(runtime.lease_acquired_at)}</dd></div>
 				<div><dt>Renew</dt><dd>{formatSeconds(runtime.renew_in)}</dd></div>
-				<div><dt>Expires</dt><dd>{formatSeconds(runtime.expires_in)}</dd></div>
+				<div><dt>Expires in</dt><dd>{formatSeconds(runtime.expires_in)}</dd></div>
+				<div><dt>Lease expires</dt><dd>{formatTimestamp(runtime.lease_expires_at)}</dd></div>
 			</dl>
 			{runtime.last_error && <div className="warning">{runtime.last_error}</div>}
 			<p className="network-note">Applying a new management address may disconnect this page. Reconnect using the new address shown above.</p>

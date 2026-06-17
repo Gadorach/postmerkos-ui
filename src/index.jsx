@@ -114,7 +114,7 @@ function App() {
 					{canWriteConfig && <Button onClick={uploadConfig} isLoading={uploading} disabled={!connected || uploading || !hasDiff} title={connected ? 'upload config' : 'disconnected'}>apply</Button>}
 					<button title="view config" onClick={() => dialogRef.current.showModal()}>config</button>
 					<dialog className="config-preview" ref={dialogRef} onClick={event => { if (event.target === dialogRef.current) dialogRef.current.close(); }}><textarea readOnly value={JSON.stringify(config, null, 2)} /></dialog>
-					{hasCapability('terminal.exec') && <TerminalTool client={client} />}{hasCapability('firmware.update') && <FirmwareTool client={client} connected={connected} />}<BackupTool client={client} config={configOnDisk} canRestore={hasCapability('config.restore')} /><AccountTool client={client} auth={auth} canManage={hasCapability('users.manage')} /><Legend poe={poeSupported} />
+					{hasCapability('terminal.exec') && <TerminalTool client={client} />}{hasCapability('firmware.update') && <FirmwareTool client={client} connected={connected} config={configOnDisk} compatibility={status?.capabilities?.compatibility} />}<BackupTool client={client} config={configOnDisk} canRestore={hasCapability('config.restore')} /><AccountTool client={client} auth={auth} canManage={hasCapability('users.manage')} /><Legend poe={poeSupported} />
 					<button title={`sign out ${auth.username}`} onClick={logout}>logout</button>
 				</div>}</div></div>
 			<div className="device-summary"><div>{status.device}</div><div>{status.datetime}</div>{Object.keys(status.temperature ?? {}).map(type => <div key={type}>{type}: {(status.temperature[type] ?? []).map((c, i) => <span key={i}>{Number(c).toFixed(1)} </span>)}(<span className="status-temp">°C</span>)</div>)}</div>

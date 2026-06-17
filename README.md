@@ -1,28 +1,29 @@
-# postmerkos-ui
+# postmerkOS web interface
 
-A Preact management interface for the postmerkOS `configd` protocol.
+This repository contains the optional browser management interface for postmerkOS. It connects to configd over an authenticated WebSocket and uses the same validation, capability, account, service, updater, and hardware APIs as the serial/SSH console.
 
-## Features
+## Interface
 
-- local Linux account authentication before status or configuration is disclosed;
-- password updates for authorized accounts;
-- firmware image upload and updater status;
-- authenticated bounded root command window;
-- plain JSON configuration backup and restore;
-- desired-state port controls remain editable when link is down, including pre-link PoE enablement;
-- click a port graphic to scroll to and highlight its configuration row;
-- hover a port for a read-only plain-text status summary;
-- persistent unapplied-change notification with Apply and Discard actions.
+The main front-panel view is organized around four actions:
 
-The production build connects to `ws://<current-host>:4001`. Authentication does not encrypt HTTP/WebSocket traffic; use a trusted management network.
+- **Legend** — port-state reference
+- **Update** — configuration backup/restore and firmware management
+- **Configuration** — ports, switching, network, accounts, SSH, time, services, terminal, and system information
+- **Logout**
+
+Selecting a front-panel port opens a focused editor. The All Ports overlay provides a scrollable table and port cloning. Controls are filtered by administrator, operator, or viewer capabilities and every request is enforced by configd.
 
 ## Development
 
 ```sh
 npm ci
+npm run dev
 npm run lint
 npm run build
-npm run dev
 ```
 
-The local Vite mock accepts any non-empty username and password. Set `SWITCH_HOST` to proxy a real switch.
+The development server includes mock responses for interface work. Production assets are generated under `build/` and installed only when the firmware is built with `INCLUDE_UI=1` or `make web`.
+
+## Backend contract
+
+See `docs/modules/` for source-module responsibilities and the builder repository’s configd protocol documentation for request/response details.

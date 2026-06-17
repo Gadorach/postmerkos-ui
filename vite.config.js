@@ -48,7 +48,7 @@ function wsPlugin() {
 						try { msg = JSON.parse(raw.toString()); } catch { send('error', { status: 400, message: 'Bad Request' }); return; }
 						if (msg.type === 'auth') {
 							if (!msg.data?.username || !msg.data?.password) send('error', { status: 401, message: 'Unauthorized' }, msg.id);
-							else { authenticated = true; send('auth', { username: msg.data.username, users: [{ username: msg.data.username }] }, msg.id); send('config', configData); send('status', statusData); }
+							else { authenticated = true; send('auth', { username: msg.data.username, role: 'administrator', capabilities: ['status.read','config.read','ports.write','switching.write','backup.create','system.reboot','firmware.update','config.restore','network.write','users.manage','services.manage','terminal.exec'], users: [{ username: msg.data.username, role: 'administrator' }] }, msg.id); send('config', configData); send('status', statusData); }
 							return;
 						}
 						if (msg.type === 'logout') { authenticated = false; send('auth_required', { message: 'Logged out' }, msg.id); return; }

@@ -37,10 +37,13 @@ export function TerminalTool({ client }) {
 	</DialogButton>;
 }
 
-export function FirmwareTool({ client, connected }) {
+export function FirmwareTool({ client, connected, config, compatibility = 'confirmed' }) {
 	const [file, setFile] = useState(null);
 	const [overlay, setOverlay] = useState('preserve');
 	const [force, setForce] = useState(false);
+	const [acceptUntested, setAcceptUntested] = useState(false);
+	const [ready, setReady] = useState(null);
+	const [repositories, setRepositories] = useState(null);
 	const [upload, setUpload] = useState(null);
 	const [status, setStatus] = useState(null);
 	const [error, setError] = useState('');
@@ -49,18 +52,35 @@ export function FirmwareTool({ client, connected }) {
 		if (!active || !connected) return undefined;
 		let stopped = false;
 		const poll = async () => {
-			try { const response = await client.request('firmware_status'); if (!stopped) setStatus(response.data); }
+			try {
+				const response = await client.request('firmware_status'); if (!stopped) setStatus(response.data);
+				const repoResponse = await client.request('firmware_repo_get'); if (!stopped) setRepositories(repoResponse.data);
+			}
 			catch (pollError) { if (!stopped) setError(pollError.message); }
 		};
 		poll(); const timer = setInterval(poll, 1500);
 		return () => { stopped = true; clearInterval(timer); };
 	}, [active, connected, client]);
 	const start = async event => {
-		event.preventDefault(); setError(''); setUpload({ phase: 'starting', progress: 0 });
+		event.preventDefault(); setError(''); setReady(null);
+		if (compatibility === 'untested' && !acceptUntested) { setError('Acknowledge the untested-model warning before continuing'); return; }
+		if (config && globalThis.confirm('Download a configuration backup before uploading firmware?')) {
+			try { const blob = await createBackup(config); downloadBlob(blob, `postmerkos-preupdate-${new Date().toISOString().replace(/[:.]/g, '-')}.json`); }
+			catch (backupError) { setError(`Backup could not be prepared: ${backupError.message}`); return; }
+		}
+		setUpload({ phase: 'starting', progress: 0 });
 		try {
-			const response = await client.uploadFirmware(file, { overlay, force, onProgress: setUpload });
-			setStatus({ state: 'starting', stage: 'handoff', progress: 0, message: response.data?.message }); setUpload(null);
+			const response = await client.uploadFirmware(file, { overlay, force, acceptUntested, onProgress: setUpload });
+			setReady(response.data); setUpload(null);
 		} catch (uploadError) { setError(uploadError.message); setUpload(null); }
+	};
+	const begin = async () => {
+		if (!ready?.token) return;
+		if (!globalThis.confirm('Begin flashing now? The web interface will disconnect and the switch will reboot.')) return;
+		try {
+			const response = await client.beginFirmware(ready.token);
+			setStatus({ state: 'starting', stage: 'acknowledged', progress: 0, message: response.data?.message }); setReady(null);
+		} catch (beginError) { setError(beginError.message); }
 	};
 	return <DialogButton label="firmware" title="upload and install firmware" onOpen={() => setActive(true)} onClose={() => setActive(false)}>
 		{({ close }) => <div className="tool-dialog firmware-dialog">
@@ -68,13 +88,16 @@ export function FirmwareTool({ client, connected }) {
 			<form onSubmit={start}>
 				<label>Firmware image<input type="file" accept=".bin,.img,.squashfs" onChange={event => setFile(event.currentTarget.files?.[0] ?? null)} /></label>
 				<label>Writable-overlay policy<select value={overlay} onChange={event => setOverlay(event.currentTarget.value)}><option value="preserve">Preserve settings byte-for-byte</option><option value="migrate">Migrate selected settings</option><option value="reset">Reset settings</option><option value="image">Use overlay embedded in full image</option></select></label>
-				<label className="checkbox-line"><input type="checkbox" checked={force} onChange={event => setForce(event.currentTarget.checked)} /> Force reinstall if content matches</label>
-				<button disabled={!file || !connected || Boolean(upload)}>{upload ? 'uploading…' : 'Upload and install'}</button>
+				<label className="checkbox-line"><input type="checkbox" checked={force} onChange={event => setForce(event.currentTarget.checked)} /> Force same/older or metadata-free image</label>
+				{compatibility === 'untested' && <label className="checkbox-line warning"><input type="checkbox" checked={acceptUntested} onChange={event => setAcceptUntested(event.currentTarget.checked)} /> I understand that this switch model is currently untested</label>}
+				<button disabled={!file || !connected || Boolean(upload) || Boolean(ready)}>{upload ? 'uploading…' : 'Upload and validate'}</button>
 			</form>
 			{upload && <div className="progress-block"><progress max="100" value={upload.progress ?? 0} /><span>{upload.phase}: {upload.progress ?? 0}%</span></div>}
+			{ready && <div className="notice"><strong>Firmware validated and ready</strong><p>{ready.message}</p><button onClick={begin}>Begin firmware update</button><button onClick={() => { client.request('firmware_upload_cancel').catch(() => {}); setReady(null); }}>Cancel</button></div>}
+			{repositories && <details><summary>Firmware repositories</summary><pre>{JSON.stringify(repositories, null, 2)}</pre></details>}
 			{status && <div className="firmware-status"><strong>{status.state} / {status.stage}</strong><progress max="100" value={status.progress ?? 0} /><span>{status.progress ?? 0}% — {status.message}</span></div>}
 			{error && <div className="error">{error}</div>}
-			<p className="warning">The web connection and SSH will close when flashing begins. Loss of connectivity is expected until the switch reboots.</p>
+			<p className="warning">When flashing begins, management connections will close. Controllable copper/PoE LEDs show approximate progress when supported; serial status and the post-reboot update log remain available.</p>
 		</div>}
 	</DialogButton>;
 }

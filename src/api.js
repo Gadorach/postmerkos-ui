@@ -51,13 +51,14 @@ export class ConfigdClient {
 		});
 	}
 
-	async uploadFirmware(file, { overlay = 'preserve', force = false, onProgress } = {}) {
+	async uploadFirmware(file, { overlay = 'preserve', force = false, acceptUntested = false, onProgress } = {}) {
 		if (!file) throw new Error('Select a firmware image first');
 		if (file.size <= 0 || file.size > 16 * 1024 * 1024)
 			throw new Error('Firmware image must be between 1 byte and 16 MiB');
 		onProgress?.({ phase: 'starting', progress: 0 });
+		await this.request('firmware_upload_cancel').catch(() => {});
 		await this.request('firmware_upload_start', {
-			name: file.name, size: file.size, overlay, force,
+			name: file.name, size: file.size, overlay, force, accept_untested: acceptUntested,
 		}, { timeout: 15000 });
 		try {
 			const chunkSize = 64 * 1024;
@@ -78,6 +79,10 @@ export class ConfigdClient {
 			this.request('firmware_upload_cancel').catch(() => {});
 			throw error;
 		}
+	}
+
+	beginFirmware(token) {
+		return this.request('firmware_begin_flash', { token }, { timeout: 15000 });
 	}
 
 	#open() {

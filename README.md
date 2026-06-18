@@ -1,6 +1,8 @@
 # postmerkOS web interface
 
-This repository contains the optional browser management interface for postmerkOS. It connects to configd over an authenticated WebSocket and uses the same validation, capability, account, service, updater, and hardware APIs as the serial/SSH console.
+This repository contains the optional browser management interface for postmerkOS. It connects to configd on port 4001 using the explicit `configd-ws` WebSocket subprotocol and uses the same validation, capability, account, service, updater, and hardware APIs as the serial/SSH console.
+
+Connection startup is layered: transport handshake, unauthenticated `hello` protocol validation, local-account authentication, then role-gated status/configuration subscriptions. The login screen reports unreachable service, handshake failure, protocol mismatch, disconnected state, and authenticated role separately.
 
 ## Interface
 

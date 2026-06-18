@@ -5,11 +5,12 @@ const DEFAULT_URL = import.meta.env.DEV
 const sleep = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
 
 export class ConfigdClient {
-	constructor({ url = DEFAULT_URL, onStatus, onConfig, onConnection, onError, onAuth, onAuthRequired } = {}) {
+	constructor({ url = DEFAULT_URL, onStatus, onConfig, onConnection, onConnectionState, onError, onAuth, onAuthRequired } = {}) {
 		this.url = url;
 		this.onStatus = onStatus;
 		this.onConfig = onConfig;
 		this.onConnection = onConnection;
+		this.onConnectionState = onConnectionState;
 		this.onError = onError;
 		this.onAuth = onAuth;
 		this.onAuthRequired = onAuthRequired;
@@ -98,14 +99,47 @@ export class ConfigdClient {
 
 	#open() {
 		if (this.stopped) return;
-		const socket = new WebSocket(this.url);
+		this.onConnectionState?.(`Connecting to ${this.url}`);
+		let socket;
+		try { socket = new WebSocket(this.url, 'configd-ws'); }
+		catch (error) {
+			this.onConnectionState?.('WebSocket could not be created.');
+			this.onError?.(error.message || 'WebSocket could not be created');
+			return;
+		}
 		this.socket = socket;
-		socket.onopen = () => { this.reconnectDelay = 1000; this.onConnection?.(true); };
+		socket.onopen = async () => {
+			this.reconnectDelay = 1000;
+			if (socket.protocol !== 'configd-ws') {
+				this.onConnectionState?.('WebSocket protocol mismatch.');
+				this.onError?.(`Expected configd-ws protocol, received ${socket.protocol || 'none'}`);
+				socket.close(1002, 'protocol mismatch');
+				return;
+			}
+			this.onConnectionState?.('Connected; checking configd protocol.');
+			try {
+				const response = await this.request('hello', undefined, { timeout: 5000 });
+				if (response.data?.service !== 'configd' || response.data?.protocol !== 2)
+					throw new Error('Unexpected configd protocol response');
+				this.onConnection?.(true);
+				this.onConnectionState?.('Connected; authentication required.');
+			} catch (error) {
+				this.onConnection?.(false);
+				this.onConnectionState?.('Connected, but configd protocol validation failed.');
+				this.onError?.(error.message);
+				socket.close(1002, 'configd hello failed');
+			}
+		};
 		socket.onmessage = event => this.#handleMessage(event.data);
-		socket.onerror = () => this.onError?.('WebSocket connection failed');
-		socket.onclose = () => {
+		socket.onerror = () => {
+			this.onConnectionState?.('WebSocket handshake or transport failed.');
+			this.onError?.(`WebSocket service is not reachable at ${this.url}`);
+		};
+		socket.onclose = event => {
 			if (this.socket === socket) this.socket = null;
 			this.onConnection?.(false);
+			const detail = event.reason ? `: ${event.reason}` : '';
+			this.onConnectionState?.(`Disconnected (code ${event.code})${detail}`);
 			this.#rejectPending(new Error('Connection lost'));
 			if (!this.stopped) {
 				this.reconnectTimer = setTimeout(() => this.#open(), this.reconnectDelay);
@@ -124,7 +158,7 @@ export class ConfigdClient {
 		if (message.type === 'status') this.onStatus?.(message.data ?? {});
 		if (message.type === 'config') this.onConfig?.(message.data ?? {});
 		if (message.type === 'auth') this.onAuth?.(message.data ?? {});
-		if (message.type === 'auth_required') this.onAuthRequired?.(message.data ?? {});
+		if (message.type === 'auth_required') { this.onConnectionState?.('Connected; authentication required.'); this.onAuthRequired?.(message.data ?? {}); }
 		for (const listener of this.listeners.get(message.type) ?? []) listener(message.data ?? {}, message);
 		if (message.id != null) {
 			const pending = this.pending.get(String(message.id));

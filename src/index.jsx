@@ -23,12 +23,12 @@ const computeDiff = (desired, current) => {
 function App() {
 	const [auth, setAuth] = useState(null); const [config, setConfig] = useState(null); const [configOnDisk, setConfigOnDisk] = useState(null);
 	const [diff, setDiff] = useState({}); const [status, setStatus] = useState({}); const [error, setError] = useState(null); const [notice, setNotice] = useState(null);
-	const [uploading, setUploading] = useState(false); const [connected, setConnected] = useState(false); const [selectedPort, setSelectedPort] = useState(null);
+	const [uploading, setUploading] = useState(false); const [connected, setConnected] = useState(false); const [connectionState, setConnectionState] = useState('Connecting…'); const [selectedPort, setSelectedPort] = useState(null);
 	const clientRef = useRef(null);
 	useEffect(() => {
 		const client = new ConfigdClient({
 			onStatus: next => setStatus(next), onConfig: next => { setConfig(next); setConfigOnDisk(next); setDiff({}); },
-			onConnection: setConnected, onAuth: next => { setAuth(next); setError(null); },
+			onConnection: setConnected, onConnectionState: setConnectionState, onAuth: next => { setAuth(next); setError(null); setConnectionState(`Authenticated as ${next.username} (${next.role}).`); },
 			onAuthRequired: () => { setAuth(null); setConfig(null); setConfigOnDisk(null); setDiff({}); setStatus({}); }, onError: setError,
 		});
 		clientRef.current = client; client.connect(); return () => { client.close(); clientRef.current = null; };
@@ -47,7 +47,7 @@ function App() {
 	const discardChanges = useCallback(() => { if (!configOnDisk) return; setConfig(structuredClone(configOnDisk)); setDiff({}); setError(null); setNotice('Unapplied configuration changes discarded.'); }, [configOnDisk]);
 	const hasDiff = Object.keys(diff ?? {}).length > 0;
 	useEffect(() => { if (!hasDiff) return undefined; const warn = event => { event.preventDefault(); event.returnValue = ''; }; globalThis.addEventListener('beforeunload', warn); return () => globalThis.removeEventListener('beforeunload', warn); }, [hasDiff]);
-	if (!auth) return <Login connected={connected} onLogin={login} error={error} />;
+	if (!auth) return <Login connected={connected} connectionState={connectionState} onLogin={login} error={error} />;
 	const client = clientRef.current; const hasCapability = capability => (auth?.capabilities ?? []).includes(capability); const canWrite = hasCapability('switching.write') || hasCapability('network.write'); const poe = Boolean(status?.capabilities?.poe?.supported);
 	return <div>
 		<header id="heading">

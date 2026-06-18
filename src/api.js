@@ -1,6 +1,8 @@
+const websocketScheme = location.protocol === 'https:' ? 'wss' : 'ws';
+const configuredPort = import.meta.env.VITE_CONFIGD_WS_PORT || '4001';
 const DEFAULT_URL = import.meta.env.DEV
-	? `ws://${location.host}/ws`
-	: `ws://${location.hostname}:4001`;
+	? `${websocketScheme}://${location.host}/ws`
+	: `${websocketScheme}://${location.hostname}:${configuredPort}`;
 
 const sleep = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
 

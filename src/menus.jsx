@@ -252,9 +252,9 @@ export function PortEditor({ client, selectedPort, onSelect, onClose, config, st
 	return <dialog className="management-dialog port-editor-dialog" ref={ref} onClose={onClose}><div className="tool-dialog wide-dialog"><DialogHeader title={`Port ${selectedPort}`} close={onClose} /><div className="port-navigation"><button disabled={index <= 0} onClick={() => move(-1)}>Previous</button><button onClick={() => setClone(value => !value)}>Clone Configuration</button><button disabled={index >= numbers.length - 1} onClick={() => move(1)}>Next</button></div>{clone && <ClonePane client={client} config={config} sourcePort={selectedPort} />}<Table ports={{ [selectedPort]: config.ports[selectedPort] }} status={status} poe={poe} updatePort={updatePort} updatePortMulti={updatePortMulti} diff={diff} selectedPort={selectedPort} /></div></dialog>;
 }
 
-export function ConfigurationMenu({ client, auth, config, status, updateRoot, updatePort, updatePortMulti, diff, poe, hasCapability }) {
+export function ConfigurationMenu({ client, auth, config, status, updateRoot, updatePort, updatePortMulti, diff, poe, hasCapability, frontTable, onFrontTableChange }) {
 	const available = useMemo(() => [
-		{ id: 'system', label: 'System' }, { id: 'network', label: 'Network' }, { id: 'ports', label: 'Ports' }, { id: 'switching', label: 'Switching' },
+		{ id: 'system', label: 'System' }, { id: 'display', label: 'Display' }, { id: 'network', label: 'Network' }, { id: 'ports', label: 'Ports' }, { id: 'switching', label: 'Switching' },
 		{ id: 'accounts', label: 'Accounts' }, { id: 'services', label: 'Services' }, { id: 'time', label: 'Time' },
 		...(hasCapability('terminal.exec') ? [{ id: 'terminal', label: 'Terminal' }] : []),
 	], [hasCapability]);
@@ -262,6 +262,7 @@ export function ConfigurationMenu({ client, auth, config, status, updateRoot, up
 	return <ModalButton label="Configuration" title="Switch configuration and system tools">
 		{({ close }) => <div className="tool-dialog extra-wide-dialog"><DialogHeader title="Configuration" close={close} /><Tabs tabs={available} selected={tab} onSelect={setTab} />
 			{tab === 'system' && <SystemPane client={client} status={status} />}
+			{tab === 'display' && <div className="tab-pane"><h3>Display</h3><label className="checkbox-line"><input type="checkbox" checked={frontTable} onChange={event => onFrontTableChange?.(event.currentTarget.checked)} /> View all ports on the front page (uncheck for a focused per-port configuration window)</label><p>When enabled, the full port table is shown on the front page and clicking a port in the diagram scrolls to its row. When disabled, clicking a port opens its focused configuration window. This preference is stored in your browser.</p></div>}
 			{tab === 'network' && <NetworkPanel config={config} status={status} updateConfig={updateRoot} diff={diff} />}
 			{tab === 'ports' && <div className="tab-pane all-ports-pane"><Table ports={config.ports} status={status} poe={poe} updatePort={updatePort} updatePortMulti={updatePortMulti} diff={diff} /></div>}
 			{tab === 'switching' && <SwitchingPane config={config} updateRoot={updateRoot} />}

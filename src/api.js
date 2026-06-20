@@ -1,8 +1,8 @@
-const websocketScheme = location.protocol === 'https:' ? 'wss' : 'ws';
-const configuredPort = import.meta.env.VITE_CONFIGD_WS_PORT || '4001';
+const WS_SCHEME = location.protocol === 'https:' ? 'wss' : 'ws';
+const WS_PORT = import.meta.env.VITE_CONFIGD_WS_PORT || '4001';
 const DEFAULT_URL = import.meta.env.DEV
-	? `${websocketScheme}://${location.host}/ws`
-	: `${websocketScheme}://${location.hostname}:${configuredPort}`;
+	? `${WS_SCHEME}://${location.host}/ws`
+	: `${WS_SCHEME}://${location.hostname}:${WS_PORT}`;
 
 const sleep = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
 
@@ -65,14 +65,20 @@ export class ConfigdClient {
 		});
 	}
 
-	async uploadFirmware(file, { overlay = 'preserve', force = false, acceptUntested = false, onProgress } = {}) {
+	async uploadFirmware(file, { manifestFile = null, overlay = 'preserve', force = false, acceptUntested = false, onProgress } = {}) {
 		if (!file) throw new Error('Select a firmware image first');
 		if (file.size <= 0 || file.size > 16 * 1024 * 1024)
 			throw new Error('Firmware image must be between 1 byte and 16 MiB');
+		let manifest;
+		if (manifestFile) {
+			if (manifestFile.size <= 0 || manifestFile.size > 1024 * 1024) throw new Error('Release manifest must be between 1 byte and 1 MiB');
+			try { manifest = JSON.parse(await manifestFile.text()); }
+			catch { throw new Error('Release manifest is not valid JSON'); }
+		}
 		onProgress?.({ phase: 'starting', progress: 0 });
 		await this.request('firmware_upload_cancel').catch(() => {});
 		await this.request('firmware_upload_start', {
-			name: file.name, size: file.size, overlay, force, accept_untested: acceptUntested,
+			name: file.name, size: file.size, overlay, force, accept_untested: acceptUntested, manifest,
 		}, { timeout: 15000 });
 		try {
 			const chunkSize = 64 * 1024;

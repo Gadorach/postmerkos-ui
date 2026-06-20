@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- Refresh the Vite and WebSocket development dependency lockfile to a zero-advisory audit.
 - Preserve desired nested PoE/VLAN/STP state when runtime link status is merged.
 - Keep all port controls editable while physical link is down.
 - Remove backup encryption and browser crypto dependencies for a smaller firmware image.

@@ -33,3 +33,17 @@ The development server includes mock responses for interface work. Production as
 ## Backend contract
 
 See `docs/modules/` for source-module responsibilities and the builder repository’s configd protocol documentation for request/response details.
+
+## Reproducible dependency installation
+
+`package-lock.json` must contain public `https://registry.npmjs.org/` package URLs.
+Do not commit lockfiles generated with a private CI, proxy, or assistant execution
+registry. The repository `.npmrc` pins the public registry, disables the animated npm
+progress display, and bounds fetch retries so connectivity errors remain visible.
+
+A clean production build is:
+
+```sh
+npm ci --no-audit --no-fund
+npm run build
+```

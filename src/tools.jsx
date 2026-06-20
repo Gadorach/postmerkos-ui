@@ -37,8 +37,9 @@ export function TerminalTool({ client }) {
 	</DialogButton>;
 }
 
-export function FirmwareTool({ client, connected, config, compatibility = 'confirmed' }) {
+export function FirmwareTool({ client, connected, config, compatibility = 'untested' }) {
 	const [file, setFile] = useState(null);
+	const [manifestFile, setManifestFile] = useState(null);
 	const [overlay, setOverlay] = useState('preserve');
 	const [force, setForce] = useState(false);
 	const [acceptUntested, setAcceptUntested] = useState(false);
@@ -63,6 +64,7 @@ export function FirmwareTool({ client, connected, config, compatibility = 'confi
 	}, [active, connected, client]);
 	const start = async event => {
 		event.preventDefault(); setError(''); setReady(null);
+		if (compatibility === 'known-incompatible') { setError('This firmware is marked known-incompatible with the detected model'); return; }
 		if (compatibility === 'untested' && !acceptUntested) { setError('Acknowledge the untested-model warning before continuing'); return; }
 		if (config && globalThis.confirm('Download a configuration backup before uploading firmware?')) {
 			try { const blob = await createBackup(config); downloadBlob(blob, `postmerkos-preupdate-${new Date().toISOString().replace(/[:.]/g, '-')}.json`); }
@@ -70,7 +72,7 @@ export function FirmwareTool({ client, connected, config, compatibility = 'confi
 		}
 		setUpload({ phase: 'starting', progress: 0 });
 		try {
-			const response = await client.uploadFirmware(file, { overlay, force, acceptUntested, onProgress: setUpload });
+			const response = await client.uploadFirmware(file, { manifestFile, overlay, force, acceptUntested, onProgress: setUpload });
 			setReady(response.data); setUpload(null);
 		} catch (uploadError) { setError(uploadError.message); setUpload(null); }
 	};
@@ -87,10 +89,12 @@ export function FirmwareTool({ client, connected, config, compatibility = 'confi
 			<div className="dialog-heading"><h2>Firmware update</h2><button onClick={close}>close</button></div>
 			<form onSubmit={start}>
 				<label>Firmware image<input type="file" accept=".bin,.img,.squashfs" onChange={event => setFile(event.currentTarget.files?.[0] ?? null)} /></label>
+				<label>Release manifest (optional)<input type="file" accept=".json,application/json" onChange={event => setManifestFile(event.currentTarget.files?.[0] ?? null)} /></label>
 				<label>Writable-overlay policy<select value={overlay} onChange={event => setOverlay(event.currentTarget.value)}><option value="preserve">Preserve settings byte-for-byte</option><option value="migrate">Migrate selected settings</option><option value="reset">Reset settings</option><option value="image">Use overlay embedded in full image</option></select></label>
 				<label className="checkbox-line"><input type="checkbox" checked={force} onChange={event => setForce(event.currentTarget.checked)} /> Force same/older or metadata-free image</label>
 				{compatibility === 'untested' && <label className="checkbox-line warning"><input type="checkbox" checked={acceptUntested} onChange={event => setAcceptUntested(event.currentTarget.checked)} /> I understand that this switch model is currently untested</label>}
-				<button disabled={!file || !connected || Boolean(upload) || Boolean(ready)}>{upload ? 'uploading…' : 'Upload and validate'}</button>
+				{compatibility === 'known-incompatible' && <div className="error">This release is known-incompatible with the detected switch model and cannot be installed.</div>}
+				<button disabled={!file || !connected || compatibility === 'known-incompatible' || Boolean(upload) || Boolean(ready)}>{upload ? 'uploading…' : 'Upload and validate'}</button>
 			</form>
 			{upload && <div className="progress-block"><progress max="100" value={upload.progress ?? 0} /><span>{upload.phase}: {upload.progress ?? 0}%</span></div>}
 			{ready && <div className="notice"><strong>Firmware validated and ready</strong><p>{ready.message}</p><button onClick={begin}>Begin firmware update</button><button onClick={() => { client.request('firmware_upload_cancel').catch(() => {}); setReady(null); }}>Cancel</button></div>}

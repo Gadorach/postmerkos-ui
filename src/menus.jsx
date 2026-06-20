@@ -56,6 +56,7 @@ function BackupPane({ client, config, canRestore }) {
 
 function FirmwarePane({ client, connected, config, compatibility }) {
 	const [file, setFile] = useState(null);
+	const [manifestFile, setManifestFile] = useState(null);
 	const [overlay, setOverlay] = useState('preserve');
 	const [force, setForce] = useState(false);
 	const [acceptUntested, setAcceptUntested] = useState(false);
@@ -84,6 +85,7 @@ function FirmwarePane({ client, connected, config, compatibility }) {
 	const start = async event => {
 		event.preventDefault(); setError(''); setReady(null);
 		if (!file) return;
+		if (compatibility === 'known-incompatible') { setError('This firmware is marked known-incompatible with the detected model.'); return; }
 		if (compatibility === 'untested' && !acceptUntested) { setError('Acknowledge the untested-model warning before continuing.'); return; }
 		if (backupChoice === 'cancel') { setError('Firmware update cancelled by backup policy.'); return; }
 		if (backupChoice === 'download') {
@@ -95,7 +97,7 @@ function FirmwarePane({ client, connected, config, compatibility }) {
 		} else if (!globalThis.confirm('Continue without an external configuration backup?')) return;
 		setUpload({ phase: 'starting', progress: 0 });
 		try {
-			const response = await client.uploadFirmware(file, { overlay, force, acceptUntested, onProgress: setUpload });
+			const response = await client.uploadFirmware(file, { manifestFile, overlay, force, acceptUntested, onProgress: setUpload });
 			setReady(response.data);
 		} catch (failure) { setError(failure.message); }
 		finally { setUpload(null); }
@@ -130,10 +132,12 @@ function FirmwarePane({ client, connected, config, compatibility }) {
 		<form onSubmit={start}>
 			<label>Pre-update backup<select value={backupChoice} onChange={event => setBackupChoice(event.currentTarget.value)}><option value="download">Download Backup and Continue</option><option value="skip">Continue Without Backup</option><option value="cancel">Cancel Update</option></select></label>
 			<label>Firmware image<input type="file" accept=".bin,.img,.squashfs" onChange={event => setFile(event.currentTarget.files?.[0] ?? null)} /></label>
+			<label>Release manifest (optional)<input type="file" accept=".json,application/json" onChange={event => setManifestFile(event.currentTarget.files?.[0] ?? null)} /></label>
 			<label>Writable-overlay policy<select value={overlay} onChange={event => setOverlay(event.currentTarget.value)}><option value="preserve">Preserve settings</option><option value="migrate">Migrate selected settings</option><option value="reset">Reset settings</option><option value="image">Use image overlay</option></select></label>
 			<label className="checkbox-line"><input type="checkbox" checked={force} onChange={event => setForce(event.currentTarget.checked)} /> Force same, older, or metadata-free image</label>
 			{compatibility === 'untested' && <label className="checkbox-line warning"><input type="checkbox" checked={acceptUntested} onChange={event => setAcceptUntested(event.currentTarget.checked)} /> I understand that this model is untested and recovery may require hardware flashing</label>}
-			<button disabled={!file || !connected || Boolean(upload) || Boolean(ready)}>Upload and Validate</button>
+			{compatibility === 'known-incompatible' && <div className="error">This release is known-incompatible with the detected switch model and cannot be installed.</div>}
+			<button disabled={!file || !connected || compatibility === 'known-incompatible' || Boolean(upload) || Boolean(ready)}>Upload and Validate</button>
 		</form>
 		{upload && <div className="progress-block"><progress max="100" value={upload.progress ?? 0} /><span>{upload.phase}: {upload.progress ?? 0}%</span></div>}
 		{ready && <div className="notice"><strong>Firmware validated and ready</strong><p>{ready.message}</p><button onClick={begin}>Begin Firmware Update</button><button onClick={() => { client.request('firmware_upload_cancel').catch(() => {}); setReady(null); }}>Cancel</button></div>}
@@ -270,9 +274,34 @@ export function ConfigurationMenu({ client, auth, config, status, updateRoot, up
 }
 
 export function CompatibilityNotice({ client, notice, onDismiss }) {
-	const ref = useRef(); const [report, setReport] = useState(null); const [error, setError] = useState('');
+	const ref = useRef();
+	const [report, setReport] = useState(null);
+	const [error, setError] = useState('');
+	const incompatible = notice?.state === 'known-incompatible' || notice?.compatibility === 'known-incompatible';
 	useEffect(() => { if (notice?.required) ref.current?.showModal(); }, [notice?.required]);
 	if (!notice?.required) return null;
-	const dismiss = async () => { try { await client.request('compatibility_ack'); ref.current?.close(); onDismiss?.(); } catch (failure) { setError(failure.message); } };
-	return <dialog className="management-dialog compatibility-dialog" ref={ref}><div className="tool-dialog"><h2>Untested Switch Model</h2><p>{notice.message}</p><p>Model: <strong>{notice.model}</strong><br />Firmware: <strong>{notice.firmware}</strong></p><button onClick={async () => { try { const response = await client.request('compatibility_report'); setReport(response.data); } catch (failure) { setError(failure.message); } }}>View Diagnostic Summary</button>{report && <pre>{JSON.stringify(report, null, 2)}</pre>}<button onClick={dismiss}>Dismiss for This Firmware</button><button onClick={() => ref.current?.close()}>Remind Me Next Time</button>{error && <div className="error">{error}</div>}</div></dialog>;
+	const dismiss = async () => {
+		if (incompatible) return;
+		try {
+			await client.request('compatibility_ack');
+			ref.current?.close();
+			onDismiss?.();
+		} catch (failure) { setError(failure.message); }
+	};
+	return <dialog className="management-dialog compatibility-dialog" ref={ref}>
+		<div className="tool-dialog">
+			<h2>{incompatible ? 'Known-Incompatible Firmware' : 'Untested Switch Model'}</h2>
+			<p>{notice.message}</p>
+			<p>Model: <strong>{notice.model}</strong><br />Firmware: <strong>{notice.firmware}</strong></p>
+			<button onClick={async () => {
+				try { const response = await client.request('compatibility_report'); setReport(response.data); }
+				catch (failure) { setError(failure.message); }
+			}}>View Diagnostic Summary</button>
+			{report && <pre>{JSON.stringify(report, null, 2)}</pre>}
+			{!incompatible && <button onClick={dismiss}>Dismiss for This Firmware</button>}
+			<button onClick={() => ref.current?.close()}>{incompatible ? 'Return to Management' : 'Remind Me Next Time'}</button>
+			{incompatible && <div className="error">This release cannot be acknowledged for this model. Install a compatible release before relying on hardware-control features.</div>}
+			{error && <div className="error">{error}</div>}
+		</div>
+	</dialog>;
 }

@@ -1,6 +1,6 @@
 # postmerkOS web interface
 
-This repository contains the optional browser management interface for postmerkOS. It connects to configd on port 4001 using the explicit `configd-ws` WebSocket subprotocol and uses the same validation, capability, account, service, updater, and hardware APIs as the serial/SSH console.
+This repository contains the optional browser management interface for postmerkOS. It connects to configd on port 4001 using the explicit `configd-ws` WebSocket subprotocol and automatically selects `ws://` or `wss://` to match the page and uses the same validation, capability, account, service, updater, and hardware APIs as the serial/SSH console.
 
 Connection startup is layered: transport handshake, unauthenticated `hello` protocol validation, local-account authentication, then role-gated status/configuration subscriptions. The login screen reports unreachable service, handshake failure, protocol mismatch, disconnected state, and authenticated role separately.
 
@@ -14,6 +14,10 @@ The main front-panel view is organized around four actions:
 - **Logout**
 
 Selecting a front-panel port opens a focused editor. The All Ports overlay provides a scrollable table and port cloning. Controls are filtered by administrator, operator, or viewer capabilities and every request is enforced by configd.
+
+## Firmware upload
+
+The browser preserves the selected firmware filename and can submit the matching JSON release manifest. This supports full-capacity 8 MiB SquashFS images whose metadata is sidecar-only. Known-incompatible candidates are blocked and cannot be dismissed; untested candidates require explicit acknowledgement. UART transfer is provided by the switch console and host flasher rather than by the browser.
 
 ## Development
 

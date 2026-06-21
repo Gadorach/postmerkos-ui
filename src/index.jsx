@@ -6,6 +6,7 @@ import Ports from './ports';
 import Legend from './legend';
 import Login from './login';
 import { CompatibilityNotice, ConfigurationMenu, PortEditor, UpdateMenu } from './menus';
+import Table from './table';
 
 const setPath = (obj, path, value) => {
 	const keys = path.split('.'); const result = structuredClone(obj); let current = result;
@@ -25,6 +26,12 @@ function App() {
 	const [diff, setDiff] = useState({}); const [status, setStatus] = useState({}); const [error, setError] = useState(null); const [notice, setNotice] = useState(null);
 	const [uploading, setUploading] = useState(false); const [connected, setConnected] = useState(false); const [connectionState, setConnectionState] = useState('Connecting…'); const [selectedPort, setSelectedPort] = useState(null);
 	const clientRef = useRef(null);
+	const [frontTable, setFrontTable] = useState(() => { try { return localStorage.getItem('pmos.frontTable') !== '0'; } catch (error) { return true; } });
+	const setFrontTablePref = useCallback(value => { setFrontTable(value); try { localStorage.setItem('pmos.frontTable', value ? '1' : '0'); } catch (error) { /* ignore */ } }, []);
+	const selectPort = useCallback(port => {
+		setSelectedPort(String(port));
+		if (frontTable) requestAnimationFrame(() => document.getElementById(`port-row-${port}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }));
+	}, [frontTable]);
 	useEffect(() => {
 		const client = new ConfigdClient({
 			onStatus: next => setStatus(next), onConfig: next => { setConfig(next); setConfigOnDisk(next); setDiff({}); },
@@ -47,6 +54,15 @@ function App() {
 	const discardChanges = useCallback(() => { if (!configOnDisk) return; setConfig(structuredClone(configOnDisk)); setDiff({}); setError(null); setNotice('Unapplied configuration changes discarded.'); }, [configOnDisk]);
 	const hasDiff = Object.keys(diff ?? {}).length > 0;
 	useEffect(() => { if (!hasDiff) return undefined; const warn = event => { event.preventDefault(); event.returnValue = ''; }; globalThis.addEventListener('beforeunload', warn); return () => globalThis.removeEventListener('beforeunload', warn); }, [hasDiff]);
+	useEffect(() => {
+		const panel = document.querySelector('.front-panel-view .ports-container');
+		if (!panel) return undefined;
+		const apply = () => document.documentElement.style.setProperty('--panel-offset', `${panel.offsetHeight}px`);
+		apply();
+		const observer = new ResizeObserver(apply);
+		observer.observe(panel);
+		return () => observer.disconnect();
+	}, [config, frontTable]);
 	if (!auth) return <Login connected={connected} connectionState={connectionState} onLogin={login} error={error} />;
 	const client = clientRef.current; const hasCapability = capability => (auth?.capabilities ?? []).includes(capability); const canWrite = hasCapability('switching.write') || hasCapability('network.write'); const poe = Boolean(status?.capabilities?.poe?.supported);
 	return <div>
@@ -54,7 +70,7 @@ function App() {
 			<div className="heading-bar"><div><h1>postmerkOS</h1><span className="version">{status?.release?.version ?? 'unknown firmware'}</span></div><nav className="heading-actions">
 				<Legend poe={poe} />
 				{client && config && <UpdateMenu client={client} connected={connected} config={configOnDisk} compatibility={status?.capabilities?.compatibility} hasCapability={hasCapability} />}
-				{client && config && <ConfigurationMenu client={client} auth={auth} config={config} status={status} updateRoot={updateRoot} updatePort={updatePort} updatePortMulti={updatePortMulti} diff={diff} poe={poe} hasCapability={hasCapability} />}
+				{client && config && <ConfigurationMenu client={client} auth={auth} config={config} status={status} updateRoot={updateRoot} updatePort={updatePort} updatePortMulti={updatePortMulti} diff={diff} poe={poe} hasCapability={hasCapability} frontTable={frontTable} onFrontTableChange={setFrontTablePref} />}
 				<button className="toolbar-button" onClick={logout}>Logout</button>
 			</nav></div>
 			<div className="device-summary"><div>{status.device}</div><div>{status.time?.local ?? status.datetime}</div><div>{status.network?.ipv4?.address ?? 'no management address'}</div>{Object.entries(status.temperature ?? {}).map(([type, values]) => <div key={type}>{type}: {(values ?? []).map(value => Number(value).toFixed(1)).join(', ')} °C</div>)}</div>
@@ -63,8 +79,8 @@ function App() {
 			{error && <div className="error">{error}</div>}{notice && <div className="notice">{notice}</div>}
 			{(status.errors ?? []).map((item, index) => <div className="warning" key={`${item.source}-${index}`}>{item.source}: {item.message}</div>)}
 		</header>
-		{config && <main className="front-panel-view"><Ports config={config} status={status} poe={poe} selectedPort={selectedPort} onSelectPort={setSelectedPort} /><p className="front-panel-hint">Select a port to open its focused configuration window.</p></main>}
-		{client && config && <PortEditor client={client} selectedPort={selectedPort} onSelect={setSelectedPort} onClose={() => setSelectedPort(null)} config={config} status={status} poe={poe} updatePort={updatePort} updatePortMulti={updatePortMulti} diff={diff} />}
+		{config && <main className="front-panel-view"><Ports config={config} status={status} poe={poe} selectedPort={selectedPort} onSelectPort={selectPort} />{frontTable ? <Table ports={config.ports} status={status} poe={poe} updatePort={updatePort} updatePortMulti={updatePortMulti} diff={diff} selectedPort={selectedPort} /> : <p className="front-panel-hint">Select a port to open its focused configuration window.</p>}</main>}
+		{!frontTable && client && config && <PortEditor client={client} selectedPort={selectedPort} onSelect={setSelectedPort} onClose={() => setSelectedPort(null)} config={config} status={status} poe={poe} updatePort={updatePort} updatePortMulti={updatePortMulti} diff={diff} />}
 		{client && <CompatibilityNotice client={client} notice={status?.compatibility_notice} onDismiss={() => setStatus(previous => ({ ...previous, compatibility_notice: { ...previous.compatibility_notice, required: false } }))} />}
 		{hasDiff && canWrite && <aside className="unsaved-changes" role="status"><div className="unsaved-copy"><strong>Unapplied configuration changes</strong><span>Apply these changes or discard them to restore the current switch configuration.</span></div><div className="unsaved-actions"><button onClick={discardChanges} disabled={uploading}>Discard Changes</button><button className="apply-button" onClick={uploadConfig} disabled={!connected || uploading}>{uploading ? 'Applying…' : 'Apply Changes'}</button></div></aside>}
 	</div>;

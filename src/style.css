@@ -747,3 +747,354 @@ tbody tr.selected-port-row td:last-child { box-shadow: inset -2px 0 0 var(--focu
 }
 .json-editor { width: 100%; box-sizing: border-box; min-height: 12rem; resize: vertical; background: #11151d; color: #d8dee9; border: 1px solid var(--border); border-radius: 6px; padding: 0.7rem; font-family: monospace; }
 .button-row { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.55rem; }
+
+/* --- Per-port clients, filtering, sorting, and SFP layout --- */
+
+/* Port diagram: separate ETH and SFP groupings */
+.ports-layout {
+	display: flex;
+	justify-content: center;
+	align-items: flex-end;
+	gap: 0.75rem;
+	margin: 0.5rem 1rem;
+}
+
+.eth-grid {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.sfp-grid {
+	display: flex;
+	flex-direction: column;
+	justify-content: flex-end;
+}
+
+.port-row {
+	display: flex;
+	gap: 2px;
+}
+
+.sfp-grid .port {
+	width: 2.4rem;
+	height: 3rem;
+	border-radius: 3px;
+	font-size: 0.8em;
+	border-style: dashed;
+}
+
+/* Condensed table */
+.port-table td {
+	padding: 0.15rem 0.5rem;
+}
+
+.port-table th {
+	padding: 0.3rem 0.5rem;
+}
+
+.port-table {
+	line-height: 1.2;
+}
+
+/* Section column shading */
+.port-table td.section-clients { background: color-mix(in srgb, var(--focus) 6%, transparent); }
+.port-table td.section-vlan { background: color-mix(in srgb, var(--focus) 3%, transparent); }
+.port-table td.section-stp { background: color-mix(in srgb, var(--focus) 6%, transparent); }
+
+tbody tr:nth-child(even) td.section-clients { background: color-mix(in srgb, var(--focus) 6%, var(--bg-alt)); }
+tbody tr:nth-child(odd) td.section-clients { background: color-mix(in srgb, var(--focus) 6%, var(--bg-body)); }
+tbody tr:nth-child(even) td.section-vlan { background: color-mix(in srgb, var(--focus) 3%, var(--bg-alt)); }
+tbody tr:nth-child(odd) td.section-vlan { background: color-mix(in srgb, var(--focus) 3%, var(--bg-body)); }
+tbody tr:nth-child(even) td.section-stp { background: color-mix(in srgb, var(--focus) 6%, var(--bg-alt)); }
+tbody tr:nth-child(odd) td.section-stp { background: color-mix(in srgb, var(--focus) 6%, var(--bg-body)); }
+
+td.section-first {
+	border-left: 2px solid var(--border);
+}
+
+/* Filter bar */
+.filter-bar {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 1rem;
+	align-items: center;
+	padding: 0.5rem 0.75rem;
+	margin: 0 auto 0.5rem;
+	width: max-content;
+	background: var(--bg);
+	border: 1px solid var(--border);
+	border-radius: 6px;
+	font-size: 0.85rem;
+}
+
+.filter-bar label {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.4rem;
+}
+
+.filter-bar select {
+	padding: 0.25rem 0.5rem;
+	font-size: 0.85rem;
+}
+
+.filter-bar input[type="checkbox"] {
+	display: inline-block;
+	width: auto;
+	margin: 0;
+}
+
+/* Sortable column headers */
+th.sortable {
+	cursor: pointer;
+	user-select: none;
+}
+
+th.sortable:hover {
+	background: var(--bg-alt);
+}
+
+/* Client count badge on port tiles */
+.port-badge-clients {
+	position: absolute;
+	left: 0;
+	bottom: 0;
+	font-size: 0.55em;
+	background: var(--focus);
+	color: var(--bg);
+	border-radius: 50%;
+	width: 1.4em;
+	height: 1.4em;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-weight: 700;
+	margin: 0.2em;
+}
+
+/* Client list in the table */
+.client-count {
+	font-weight: 600;
+}
+
+.client-detail {
+	text-align: left \!important;
+	max-width: 20rem;
+}
+
+.client-list {
+	display: grid;
+	gap: 0.15rem;
+}
+
+.client-entry {
+	display: flex;
+	gap: 0.6rem;
+	font-size: 0.8rem;
+	font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, monospace;
+}
+
+.client-mac {
+	color: var(--text-muted);
+	text-decoration: none;
+}
+
+.client-mac:hover {
+	color: var(--focus);
+	text-decoration: underline;
+}
+
+.client-ip {
+	color: var(--text-bright);
+}
+
+.client-age {
+	color: var(--text-muted);
+	font-size: 0.85em;
+}
+/* Appended by genGadMeraki local overlay */
+
+/* --- Per-port clients, filtering, sorting, and SFP layout --- */
+
+/* Port diagram: separate ETH and SFP groupings */
+.ports-layout {
+	display: flex;
+	justify-content: center;
+	align-items: flex-end;
+	gap: 0.75rem;
+	margin: 0.5rem 1rem;
+}
+
+.eth-grid {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.sfp-grid {
+	display: flex;
+	flex-direction: column;
+	justify-content: flex-end;
+}
+
+.port-row {
+	display: flex;
+	gap: 2px;
+}
+
+.sfp-grid .port {
+	width: 2.4rem;
+	height: 3rem;
+	border-radius: 3px;
+	font-size: 0.8em;
+	border-style: dashed;
+}
+
+/* Condensed table */
+.port-table td {
+	padding: 0.15rem 0.5rem;
+}
+
+.port-table th {
+	padding: 0.3rem 0.5rem;
+}
+
+.port-table {
+	line-height: 1.2;
+}
+
+/* Section column shading */
+.port-table td.section-clients { background: color-mix(in srgb, var(--focus) 6%, transparent); }
+.port-table td.section-vlan { background: color-mix(in srgb, var(--focus) 3%, transparent); }
+.port-table td.section-stp { background: color-mix(in srgb, var(--focus) 6%, transparent); }
+
+tbody tr:nth-child(even) td.section-clients { background: color-mix(in srgb, var(--focus) 6%, var(--bg-alt)); }
+tbody tr:nth-child(odd) td.section-clients { background: color-mix(in srgb, var(--focus) 6%, var(--bg-body)); }
+tbody tr:nth-child(even) td.section-vlan { background: color-mix(in srgb, var(--focus) 3%, var(--bg-alt)); }
+tbody tr:nth-child(odd) td.section-vlan { background: color-mix(in srgb, var(--focus) 3%, var(--bg-body)); }
+tbody tr:nth-child(even) td.section-stp { background: color-mix(in srgb, var(--focus) 6%, var(--bg-alt)); }
+tbody tr:nth-child(odd) td.section-stp { background: color-mix(in srgb, var(--focus) 6%, var(--bg-body)); }
+
+td.section-first {
+	border-left: 2px solid var(--border);
+}
+
+/* Filter bar */
+.filter-bar {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 1rem;
+	align-items: center;
+	padding: 0.5rem 0.75rem;
+	margin: 0 auto 0.5rem;
+	width: max-content;
+	background: var(--bg);
+	border: 1px solid var(--border);
+	border-radius: 6px;
+	font-size: 0.85rem;
+}
+
+.filter-bar label {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.4rem;
+}
+
+.filter-bar select {
+	padding: 0.25rem 0.5rem;
+	font-size: 0.85rem;
+}
+
+.filter-bar input[type="checkbox"] {
+	display: inline-block;
+	width: auto;
+	margin: 0;
+}
+
+/* Sortable column headers */
+th.sortable {
+	cursor: pointer;
+	user-select: none;
+}
+
+th.sortable:hover {
+	background: var(--bg-alt);
+}
+
+/* Client count badge on port tiles */
+.port-badge-clients {
+	position: absolute;
+	left: 0;
+	bottom: 0;
+	font-size: 0.55em;
+	background: var(--focus);
+	color: var(--bg);
+	border-radius: 50%;
+	width: 1.4em;
+	height: 1.4em;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-weight: 700;
+	margin: 0.2em;
+}
+
+/* Client list in the table */
+.client-count {
+	font-weight: 600;
+}
+
+.client-detail {
+	text-align: left !important;
+	max-width: 20rem;
+}
+
+.client-list {
+	display: grid;
+	gap: 0.15rem;
+}
+
+.client-entry {
+	display: flex;
+	gap: 0.6rem;
+	font-size: 0.8rem;
+	font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, monospace;
+}
+
+.client-mac {
+	color: var(--text-muted);
+	text-decoration: none;
+}
+
+.client-mac:hover {
+	color: var(--focus);
+	text-decoration: underline;
+}
+
+.client-ip {
+	color: var(--text-bright);
+}
+
+.client-age {
+	color: var(--text-muted);
+	font-size: 0.85em;
+}
+
+/* Front-page port table: full width, and no inner scrollbox so the page
+   scrolls (centering a row inside an 80vh box can leave it below the fold).
+   The PortEditor modal table keeps its compact scrollbox. */
+.front-panel-view .table-scroll { width: 100%; max-height: none; overflow: visible; }
+.front-panel-view .port-table { width: 100%; }
+
+/* Float the port diagram to the top while scrolling the long table.
+   Table column headers stack just below it via --panel-offset (set in JS). */
+.front-panel-view .ports-container {
+	position: sticky;
+	top: 0;
+	z-index: 30;
+	background: var(--bg-body);
+	box-shadow: 0 3px 8px rgba(0, 0, 0, 0.18);
+}
+.front-panel-view .port-table thead tr:first-child th { top: var(--panel-offset, 0); }
+.front-panel-view .port-table thead tr:last-child th { top: calc(var(--panel-offset, 0) + 1em + 1rem + 1px); }

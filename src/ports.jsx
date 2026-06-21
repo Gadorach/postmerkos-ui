@@ -1,28 +1,48 @@
 import './style.css';
-import { useMemo } from 'preact/hooks';
 import Port from './port';
 import { mergePortState } from './port-state';
 
 export default function Ports({ config, status, poe, selectedPort, onSelectPort }) {
 	const ports = config.ports;
-	const count = Object.keys(ports).length;
-	const { gridStyle, spfCount } = useMemo(() => {
-		const rows = count > 10 ? 2 : 1;
-		const spf = count > 10 ? 4 : 2;
-		const groups = Math.floor(count / 12);
-		return { gridStyle: { gridTemplateColumns: `repeat(${((count - spf) / rows) + groups}, 1fr)` }, spfCount: spf };
-	}, [count]);
-	const compare = (a, b) => {
-		if (count < 12) return Number(a) - Number(b);
-		const firstSpf = count - spfCount;
-		if (Number(a) > firstSpf || Number(b) > firstSpf) return Number(a) - Number(b);
-		return Number(b) % 2 - Number(a) % 2;
+	const keys = Object.keys(ports).map(Number).sort((a, b) => a - b);
+	const count = keys.length;
+	const spfCount = count > 10 ? 4 : 2;
+	const firstSpf = count - spfCount + 1;
+
+	const makePort = (n) => {
+		const port = String(n);
+		return <Port key={port} number={port}
+			port={mergePortState(ports[port], status?.ports?.[port], status?.clients?.[port] ?? [])}
+			poe={poe} selected={String(selectedPort) === port} onSelect={onSelectPort} />;
 	};
-	return <div className="ports-container"><div className="ports-grid" style={gridStyle}>
-		{Object.keys(ports).sort(compare).map(port => {
-			const graphic = <Port key={port} number={port} port={mergePortState(ports[port], status?.ports?.[port])} poe={poe} selected={String(selectedPort) === String(port)} onSelect={onSelectPort} />;
-			const index = Number(port) % 12;
-			return (index === 0 || index === 11) ? [graphic, <div key={`spacer-${port}`} className="port-spacer" />] : graphic;
-		})}
-	</div></div>;
+
+	const ethKeys = keys.filter(n => n < firstSpf);
+	const sfpKeys = keys.filter(n => n >= firstSpf);
+
+	const topRow = [];
+	const bottomRow = [];
+	const perGroup = 12;
+	const lastEth = ethKeys[ethKeys.length - 1];
+
+	for (let i = 0; i < ethKeys.length; i++) {
+		const n = ethKeys[i];
+		const row = (n % 2 === 1) ? topRow : bottomRow;
+		row.push(makePort(n));
+		if (n % perGroup === 0 && n < lastEth) {
+			topRow.push(<div key={`sp-t-${n}`} className="port-spacer" />);
+			bottomRow.push(<div key={`sp-b-${n}`} className="port-spacer" />);
+		}
+	}
+
+	return <div className="ports-container">
+		<div className="ports-layout">
+			<div className="eth-grid">
+				<div className="port-row">{topRow}</div>
+				{bottomRow.length > 0 && <div className="port-row">{bottomRow}</div>}
+			</div>
+			{sfpKeys.length > 0 && <div className="sfp-grid">
+				<div className="port-row">{sfpKeys.map(makePort)}</div>
+			</div>}
+		</div>
+	</div>;
 }

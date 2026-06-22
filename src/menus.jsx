@@ -202,6 +202,48 @@ function AccountPane({ client, auth, canManage }) {
 	return <div className="tab-pane"><h3>Accounts and roles</h3><div className="account-grid">{users.map(user => <div className="account-row" key={user.username}><strong>{user.username}</strong><select value={user.role} disabled={!canManage || user.username === 'root'} onChange={event => setRole(user.username, event.currentTarget.value)}><option value="admin">Administrator</option><option value="operator">Operator</option><option value="viewer">Viewer</option></select>{canManage && <button disabled={user.username === 'root'} onClick={() => remove(user.username)}>Delete</button>}</div>)}</div><form onSubmit={changePassword}><h3>Change password</h3><label>Account<select value={passwordTarget} onChange={event => setPasswordTarget(event.currentTarget.value)}>{users.filter(user => canManage || user.username === auth.username).map(user => <option key={user.username} value={user.username}>{user.username}</option>)}</select></label><label>Current password<input type="password" value={currentPassword} onInput={event => setCurrentPassword(event.currentTarget.value)} /></label><label>New password<input type="password" value={replacementPassword} onInput={event => setReplacementPassword(event.currentTarget.value)} /></label><button disabled={!currentPassword || replacementPassword.length < 8}>Change Password</button></form>{canManage && <form onSubmit={create}><h3>Create account</h3><label>Username<input value={newUser} onInput={event => setNewUser(event.currentTarget.value)} /></label><label>Initial password<input type="password" value={newPassword} onInput={event => setNewPassword(event.currentTarget.value)} /></label><label>Role<select value={newRole} onChange={event => setNewRole(event.currentTarget.value)}><option value="admin">Administrator</option><option value="operator">Operator</option><option value="viewer">Viewer</option></select></label><button disabled={!newUser || newPassword.length < 8}>Create Account</button></form>}{notice && <div className="notice">{notice}</div>}{error && <div className="error">{error}</div>}</div>;
 }
 
+async function sshFingerprint(key) {
+	try {
+		const blob = key.trim().split(/\s+/)[1];
+		if (!blob) return '';
+		const bytes = Uint8Array.from(atob(blob), c => c.charCodeAt(0));
+		const digest = await crypto.subtle.digest('SHA-256', bytes);
+		const b64 = btoa(String.fromCharCode(...new Uint8Array(digest))).replace(/=+$/, '');
+		return `SHA256:${b64}`;
+	} catch (failure) { return ''; }
+}
+
+function SshKeysPane({ client, canManage }) {
+	const [keys, setKeys] = useState([]);
+	const [prints, setPrints] = useState({});
+	const [label, setLabel] = useState('');
+	const [material, setMaterial] = useState('');
+	const [notice, setNotice] = useState(''); const [error, setError] = useState('');
+	const load = async data => {
+		const list = data ?? (await client.request('ssh_key_list')).data?.keys ?? [];
+		setKeys(list);
+		const entries = await Promise.all(list.map(async k => [k.key, await sshFingerprint(k.key)]));
+		setPrints(Object.fromEntries(entries));
+	};
+	useEffect(() => { if (canManage) load().catch(failure => setError(failure.message)); }, [canManage]);
+	const add = async event => {
+		event.preventDefault(); setError('');
+		try { const response = await client.request('ssh_key_add', { label, key: material.trim() }); await load(response.data?.keys); setLabel(''); setMaterial(''); setNotice('Key added.'); }
+		catch (failure) { setError(failure.message); }
+	};
+	const remove = async key => {
+		if (!globalThis.confirm('Remove this SSH key?')) return; setError('');
+		try { const response = await client.request('ssh_key_remove', { key }); await load(response.data?.keys); setNotice('Key removed.'); }
+		catch (failure) { setError(failure.message); }
+	};
+	if (!canManage) return null;
+	return <div className="tab-pane"><h3>SSH keys (root)</h3>
+		<p className="ssh-hint">Public keys that authorize SSH login as root. Password login can be disabled separately under Services.</p>
+		<div className="ssh-key-list">{keys.length === 0 && <div className="ssh-empty">No keys configured.</div>}{keys.map(k => <div className="ssh-key-row" key={k.key}><div className="ssh-key-main"><strong>{k.label || (k.key.split(/\s+/)[2] ?? k.key.split(/\s+/)[0])}</strong><code>{prints[k.key] || k.key.split(/\s+/)[0]}</code></div><button onClick={() => remove(k.key)}>Remove</button></div>)}</div>
+		<form onSubmit={add}><h3>Add key</h3><label>Label (optional)<input value={label} onInput={event => setLabel(event.currentTarget.value)} /></label><label>Public key<textarea rows="3" value={material} placeholder="ssh-ed25519 AAAA... user@host" onInput={event => setMaterial(event.currentTarget.value)} /></label><button disabled={!material.trim()}>Add Key</button></form>
+		{notice && <div className="notice">{notice}</div>}{error && <div className="error">{error}</div>}</div>;
+}
+
 function ServicePane({ client }) {
 	const [policy, setPolicy] = useState(null); const [error, setError] = useState(''); const [notice, setNotice] = useState('');
 	const load = async () => { try { const response = await client.request('services_get'); setPolicy(response.data); } catch (failure) { setError(failure.message); } };
@@ -266,7 +308,7 @@ export function ConfigurationMenu({ client, auth, config, status, updateRoot, up
 			{tab === 'network' && <NetworkPanel config={config} status={status} updateConfig={updateRoot} diff={diff} />}
 			{tab === 'ports' && <div className="tab-pane all-ports-pane"><Table ports={config.ports} status={status} poe={poe} updatePort={updatePort} updatePortMulti={updatePortMulti} diff={diff} /></div>}
 			{tab === 'switching' && <SwitchingPane config={config} updateRoot={updateRoot} />}
-			{tab === 'accounts' && <AccountPane client={client} auth={auth} canManage={hasCapability('users.manage')} />}
+			{tab === 'accounts' && <><AccountPane client={client} auth={auth} canManage={hasCapability('users.manage')} /><SshKeysPane client={client} canManage={hasCapability('users.manage')} /></>}
 			{tab === 'services' && (hasCapability('services.manage') ? <ServicePane client={client} /> : <div className="warning">Service configuration requires administrator access.</div>)}
 			{tab === 'time' && (hasCapability('services.manage') ? <TimePane client={client} /> : <SystemPane client={client} status={status} />)}
 			{tab === 'terminal' && <TerminalPane client={client} />}

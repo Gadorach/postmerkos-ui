@@ -1098,3 +1098,10 @@ th.sortable:hover {
 }
 .front-panel-view .port-table thead tr:first-child th { top: var(--panel-offset, 0); }
 .front-panel-view .port-table thead tr:last-child th { top: calc(var(--panel-offset, 0) + 1em + 1rem + 1px); }
+
+.ssh-hint { color: var(--muted, #888); font-size: 0.85rem; margin: 0 0 0.5rem; }
+.ssh-key-list { display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 1rem; }
+.ssh-key-row { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.4rem 0.6rem; border: 1px solid var(--border, #333); border-radius: 6px; }
+.ssh-key-main { display: flex; flex-direction: column; min-width: 0; }
+.ssh-key-main code { font-size: 0.75rem; color: var(--muted, #888); overflow-wrap: anywhere; }
+.ssh-empty { color: var(--muted, #888); font-style: italic; }

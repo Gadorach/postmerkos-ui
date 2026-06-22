@@ -775,9 +775,13 @@ tbody tr.selected-port-row td:last-child { box-shadow: inset -2px 0 0 var(--focu
 @media (max-width: 430px) { .unsaved-actions { grid-template-columns: 1fr; } }
 
 /* Phase 6 management layout */
-.heading-bar { display: flex; align-items: flex-start; gap: 1rem; justify-content: space-between; }
-.heading-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: flex-end; }
+.heading-bar { display: flex; align-items: center; gap: 0.6rem 1.1rem; flex-wrap: wrap; }
+.brand { display: flex; align-items: baseline; gap: 0.45rem; flex: 0 0 auto; }
+.device-summary { flex: 1 1 16rem; min-width: 0; margin-top: 0; }
+.heading-actions { display: flex; gap: 0.4rem; flex-wrap: wrap; justify-content: flex-end; flex: 0 0 auto; }
 .toolbar-button { min-width: 7.25rem; min-height: 2.55rem; display: inline-flex; align-items: center; justify-content: center; font-weight: 600; text-transform: none; }
+.toolbar-button.icon-button { min-width: 2.55rem; width: 2.55rem; padding: 0; }
+.toolbar-button.icon-button svg { width: 1.3rem; height: 1.3rem; display: block; }
 .management-dialog { width: min(96vw, 96rem); max-width: none; border: 1px solid var(--border); border-radius: 10px; padding: 0; background: var(--bg); color: var(--text); }
 .management-dialog::backdrop { background: rgba(16, 20, 28, 0.72); }
 .wide-dialog { width: min(80rem, 92vw); }

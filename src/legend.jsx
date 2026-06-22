@@ -1,5 +1,6 @@
 import { useRef } from 'preact/hooks';
 import Port from './port';
+import { InfoIcon } from './icons';
 
 const states = [
     { help: "port is disabled", port: { enabled: false } },
@@ -20,7 +21,7 @@ export default function Legend({ poe }) {
 
     return (
         <span>
-            <button className="toolbar-button" title="Port-state legend" onClick={() => dialogRef.current.showModal()}>Legend</button>
+            <button className="toolbar-button icon-button" title="Legend" aria-label="Legend" onClick={() => dialogRef.current.showModal()}><InfoIcon /></button>
             <dialog className="legend" ref={dialogRef} onClick={(e) => {
                 if (e.target === dialogRef.current) dialogRef.current.close();
             }}>

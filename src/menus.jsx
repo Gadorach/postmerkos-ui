@@ -2,13 +2,14 @@ import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { createBackup, downloadBlob, readBackup } from './backup';
 import NetworkPanel from './network';
 import Table from './table';
+import { CogIcon, UpdateIcon } from './icons';
 
 function ModalButton({ label, title, className = '', children, onOpen, onClose }) {
 	const ref = useRef();
 	const open = () => { onOpen?.(); ref.current?.showModal(); };
 	const close = () => ref.current?.close();
 	return <>
-		<button className={`toolbar-button ${className}`} title={title ?? label} onClick={open}>{label}</button>
+		<button className={`toolbar-button ${className}`} title={title ?? label} aria-label={typeof title === 'string' ? title : undefined} onClick={open}>{label}</button>
 		<dialog className="management-dialog" ref={ref} onClose={onClose} onClick={event => { if (event.target === ref.current) close(); }}>
 			{children({ close })}
 		</dialog>
@@ -151,7 +152,7 @@ function FirmwarePane({ client, connected, config, compatibility }) {
 export function UpdateMenu(props) {
 	const [tab, setTab] = useState('backup');
 	const tabs = [{ id: 'backup', label: 'Configuration Backup' }, { id: 'firmware', label: 'Firmware' }];
-	return <ModalButton label="Update" title="Configuration backup, restore, and firmware update">
+	return <ModalButton label={<UpdateIcon />} className="icon-button" title="Update — configuration backup, restore, and firmware">
 		{({ close }) => <div className="tool-dialog wide-dialog"><DialogHeader title="Update" close={close} /><Tabs tabs={tabs} selected={tab} onSelect={setTab} />
 			{tab === 'backup' ? <BackupPane {...props} canRestore={props.hasCapability('config.restore')} /> : props.hasCapability('firmware.update') ? <FirmwarePane {...props} /> : <div className="warning">Firmware updates require administrator access.</div>}
 		</div>}
@@ -259,7 +260,7 @@ export function ConfigurationMenu({ client, auth, config, status, updateRoot, up
 		...(hasCapability('terminal.exec') ? [{ id: 'terminal', label: 'Terminal' }] : []),
 	], [hasCapability]);
 	const [tab, setTab] = useState('system');
-	return <ModalButton label="Configuration" title="Switch configuration and system tools">
+	return <ModalButton label={<CogIcon />} className="icon-button" title="Configuration — switch configuration and system tools">
 		{({ close }) => <div className="tool-dialog extra-wide-dialog"><DialogHeader title="Configuration" close={close} /><Tabs tabs={available} selected={tab} onSelect={setTab} />
 			{tab === 'system' && <SystemPane client={client} status={status} />}
 			{tab === 'display' && <div className="tab-pane"><h3>Display</h3><label className="checkbox-line"><input type="checkbox" checked={frontTable} onChange={event => onFrontTableChange?.(event.currentTarget.checked)} /> View all ports on the front page (uncheck for a focused per-port configuration window)</label><p>When enabled, the full port table is shown on the front page and clicking a port in the diagram scrolls to its row. When disabled, clicking a port opens its focused configuration window. This preference is stored in your browser.</p></div>}

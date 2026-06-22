@@ -7,6 +7,7 @@ import Legend from './legend';
 import Login from './login';
 import { CompatibilityNotice, ConfigurationMenu, PortEditor, UpdateMenu } from './menus';
 import Table from './table';
+import { DoorIcon } from './icons';
 
 const setPath = (obj, path, value) => {
 	const keys = path.split('.'); const result = structuredClone(obj); let current = result;
@@ -75,18 +76,21 @@ function App() {
 	(status.errors ?? []).forEach((item, index) => { const id = `err-${item.source}-${index}`; if (!dismissed.has(id)) toasts.push({ id, kind: 'warning', text: `${item.source}: ${item.message}`, onClose: () => dismissToast(id) }); });
 	return <div>
 		<header id="heading">
-			<div className="heading-bar"><div><h1>postmerkOS</h1><span className="version">{status?.release?.version ?? 'unknown firmware'}</span></div><nav className="heading-actions">
-				<Legend poe={poe} />
-				{client && config && <UpdateMenu client={client} connected={connected} config={configOnDisk} compatibility={status?.capabilities?.compatibility} hasCapability={hasCapability} />}
-				{client && config && <ConfigurationMenu client={client} auth={auth} config={config} status={status} updateRoot={updateRoot} updatePort={updatePort} updatePortMulti={updatePortMulti} diff={diff} poe={poe} hasCapability={hasCapability} frontTable={frontTable} onFrontTableChange={setFrontTablePref} />}
-				<button className="toolbar-button" onClick={logout}>Logout</button>
-			</nav></div>
-			<div className="device-summary">
-				<span className="ds-item ds-device">{status.device ?? '—'}</span>
-				<span className="ds-item">{status.network?.ipv4?.address ?? 'no management address'}</span>
-				<span className="ds-item">{status.time?.local ?? status.datetime ?? ''}</span>
-				{Object.entries(status.temperature ?? {}).map(([type, values]) => <span className="ds-item" key={type}>{type} {(values ?? []).map(value => Number(value).toFixed(1)).join(' / ')} °C</span>)}
-				<span className={`conn-pill ${connected ? 'connected' : 'disconnected'}`}>{connected ? `${auth.username} · ${auth.role}` : 'disconnected'}</span>
+			<div className="heading-bar">
+				<div className="brand"><h1>postmerkOS</h1><span className="version">{status?.release?.version ?? 'unknown firmware'}</span></div>
+				<div className="device-summary">
+					<span className="ds-item ds-device">{status.device ?? '—'}</span>
+					<span className="ds-item">{status.network?.ipv4?.address ?? 'no management address'}</span>
+					<span className="ds-item">{status.time?.local ?? status.datetime ?? ''}</span>
+					{Object.entries(status.temperature ?? {}).map(([type, values]) => <span className="ds-item" key={type}>{type} {(values ?? []).map(value => Number(value).toFixed(1)).join(' / ')} °C</span>)}
+					<span className={`conn-pill ${connected ? 'connected' : 'disconnected'}`}>{connected ? `${auth.username} · ${auth.role}` : 'disconnected'}</span>
+				</div>
+				<nav className="heading-actions">
+					<Legend poe={poe} />
+					{client && config && <UpdateMenu client={client} connected={connected} config={configOnDisk} compatibility={status?.capabilities?.compatibility} hasCapability={hasCapability} />}
+					{client && config && <ConfigurationMenu client={client} auth={auth} config={config} status={status} updateRoot={updateRoot} updatePort={updatePort} updatePortMulti={updatePortMulti} diff={diff} poe={poe} hasCapability={hasCapability} frontTable={frontTable} onFrontTableChange={setFrontTablePref} />}
+					<button className="toolbar-button icon-button" title="Logout" aria-label="Logout" onClick={logout}><DoorIcon /></button>
+				</nav>
 			</div>
 		</header>
 		{config && <main className="front-panel-view"><Ports config={config} status={status} poe={poe} selectedPort={selectedPort} onSelectPort={selectPort} />{frontTable ? <Table ports={config.ports} status={status} poe={poe} updatePort={updatePort} updatePortMulti={updatePortMulti} diff={diff} selectedPort={selectedPort} /> : <p className="front-panel-hint">Select a port to open its focused configuration window.</p>}</main>}

@@ -234,6 +234,41 @@ function SwitchingPane({ config, updateRoot }) {
 	return <div className="tab-pane switching-pane"><fieldset><legend>Global Spanning Tree</legend><div className="form-grid"><label>Bridge priority<input type="number" min="0" max="61440" step="4096" value={stp.priority} onInput={event => updateRoot('stp.priority', Number(event.currentTarget.value))} /></label><label>Hello time<input type="number" min="1" max="10" value={stp.hello_time} onInput={event => updateRoot('stp.hello_time', Number(event.currentTarget.value))} /></label><label>Forward delay<input type="number" min="4" max="30" value={stp.forward_delay} onInput={event => updateRoot('stp.forward_delay', Number(event.currentTarget.value))} /></label><label>Maximum age<input type="number" min="6" max="40" value={stp.max_age} onInput={event => updateRoot('stp.max_age', Number(event.currentTarget.value))} /></label><label>Hold count<input type="number" min="1" max="10" value={stp.hold_count} onInput={event => updateRoot('stp.hold_count', Number(event.currentTarget.value))} /></label></div></fieldset><fieldset><legend>Link Aggregation</legend><label className="checkbox-line"><input type="checkbox" checked={lacp.enabled} onChange={event => updateRoot('lacp.enabled', event.currentTarget.checked)} /> Enable LACP</label></fieldset><fieldset><legend>Multicast</legend><div className="form-grid"><label className="checkbox-line"><input type="checkbox" checked={multicast.igmp_snooping} onChange={event => updateRoot('multicast.igmp_snooping', event.currentTarget.checked)} /> IGMP snooping</label><label>IGMP querier interval<input type="number" min="1" max="3600" value={multicast.igmp_querier_interval} onInput={event => updateRoot('multicast.igmp_querier_interval', Number(event.currentTarget.value))} /></label><label className="checkbox-line"><input type="checkbox" checked={multicast.mld_snooping} onChange={event => updateRoot('multicast.mld_snooping', event.currentTarget.checked)} /> MLD snooping</label><label>MLD querier interval<input type="number" min="1" max="3600" value={multicast.mld_querier_interval} onInput={event => updateRoot('multicast.mld_querier_interval', Number(event.currentTarget.value))} /></label></div></fieldset></div>;
 }
 
+function MonitoringPane({ config, updateRoot }) {
+	const t = config?.telemetry ?? {};
+	const prom = t.prometheus ?? { enabled: false, port: 9100 };
+	const snmp = t.snmp ?? { enabled: false, community: '', location: '', contact: '' };
+	const mgmt = config?.network?.ipv4?.address?.split('/')?.[0] ?? '<management-address>';
+	return <div className="tab-pane monitoring-pane">
+		<fieldset>
+			<legend>Prometheus metrics</legend>
+			<label className="checkbox-line"><input type="checkbox" checked={prom.enabled}
+				onChange={event => updateRoot('telemetry.prometheus.enabled', event.currentTarget.checked)} /> Enable Prometheus metrics endpoint</label>
+			<div className="form-grid">
+				<label>Port<input type="number" min="1" max="65535" value={prom.port ?? 9100}
+					onInput={event => updateRoot('telemetry.prometheus.port', Number(event.currentTarget.value))} /></label>
+			</div>
+			{prom.enabled && <p className="notice">Metrics endpoint: http://{mgmt}:{prom.port ?? 9100}/metrics</p>}
+		</fieldset>
+		<fieldset>
+			<legend>SNMP (read-only v2c IF-MIB)</legend>
+			<label className="checkbox-line"><input type="checkbox" checked={snmp.enabled}
+				onChange={event => updateRoot('telemetry.snmp.enabled', event.currentTarget.checked)} /> Enable SNMP</label>
+			<div className="form-grid">
+				<label>Community<input value={snmp.community ?? ''} placeholder="(required when enabled)"
+					onInput={event => updateRoot('telemetry.snmp.community', event.currentTarget.value)} /></label>
+				<label>Location<input value={snmp.location ?? ''}
+					onInput={event => updateRoot('telemetry.snmp.location', event.currentTarget.value)} /></label>
+				<label>Contact<input value={snmp.contact ?? ''}
+					onInput={event => updateRoot('telemetry.snmp.contact', event.currentTarget.value)} /></label>
+			</div>
+			{snmp.enabled && !snmp.community && <p className="warning">A community string is required to enable SNMP.</p>}
+			{snmp.community === 'public' && <p className="warning">Avoid the well-known community "public".</p>}
+			{snmp.enabled && snmp.community && <p className="notice">SNMP v2c read-only enabled on the management interface.</p>}
+		</fieldset>
+	</div>;
+}
+
 function ClonePane({ client, config, sourcePort, onDone }) {
 	const allFields = ['administrative', 'name', 'phy', 'storm_control', 'vlan', 'stp', 'poe'];
 	const [fields, setFields] = useState(allFields); const [targets, setTargets] = useState([]); const [result, setResult] = useState(null); const [error, setError] = useState('');
@@ -255,7 +290,7 @@ export function PortEditor({ client, selectedPort, onSelect, onClose, config, st
 export function ConfigurationMenu({ client, auth, config, status, updateRoot, updatePort, updatePortMulti, diff, poe, hasCapability, frontTable, onFrontTableChange }) {
 	const available = useMemo(() => [
 		{ id: 'system', label: 'System' }, { id: 'display', label: 'Display' }, { id: 'network', label: 'Network' }, { id: 'ports', label: 'Ports' }, { id: 'switching', label: 'Switching' },
-		{ id: 'accounts', label: 'Accounts' }, { id: 'services', label: 'Services' }, { id: 'time', label: 'Time' },
+		{ id: 'accounts', label: 'Accounts' }, { id: 'services', label: 'Services' }, { id: 'monitoring', label: 'Monitoring' }, { id: 'time', label: 'Time' },
 		...(hasCapability('terminal.exec') ? [{ id: 'terminal', label: 'Terminal' }] : []),
 	], [hasCapability]);
 	const [tab, setTab] = useState('system');
@@ -268,6 +303,9 @@ export function ConfigurationMenu({ client, auth, config, status, updateRoot, up
 			{tab === 'switching' && <SwitchingPane config={config} updateRoot={updateRoot} />}
 			{tab === 'accounts' && <AccountPane client={client} auth={auth} canManage={hasCapability('users.manage')} />}
 			{tab === 'services' && (hasCapability('services.manage') ? <ServicePane client={client} /> : <div className="warning">Service configuration requires administrator access.</div>)}
+			{tab === 'monitoring' && (hasCapability('network.write')
+				? <MonitoringPane config={config} updateRoot={updateRoot} />
+				: <div className="warning">Monitoring configuration requires write access.</div>)}
 			{tab === 'time' && (hasCapability('services.manage') ? <TimePane client={client} /> : <SystemPane client={client} status={status} />)}
 			{tab === 'terminal' && <TerminalPane client={client} />}
 		</div>}

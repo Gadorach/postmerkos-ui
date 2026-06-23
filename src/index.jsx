@@ -7,6 +7,7 @@ import Legend from './legend';
 import Login from './login';
 import { CompatibilityNotice, ConfigurationMenu, PortEditor, UpdateMenu } from './menus';
 import Table from './table';
+import { clearSession, loadSession, saveSession } from './session';
 
 const setPath = (obj, path, value) => {
 	const keys = path.split('.'); const result = structuredClone(obj); let current = result;
@@ -26,6 +27,7 @@ function App() {
 	const [diff, setDiff] = useState({}); const [status, setStatus] = useState({}); const [error, setError] = useState(null); const [notice, setNotice] = useState(null);
 	const [uploading, setUploading] = useState(false); const [connected, setConnected] = useState(false); const [connectionState, setConnectionState] = useState('Connecting…'); const [selectedPort, setSelectedPort] = useState(null);
 	const clientRef = useRef(null);
+	const resumingRef = useRef(false);
 	const [frontTable, setFrontTable] = useState(() => { try { return localStorage.getItem('pmos.frontTable') !== '0'; } catch (error) { return true; } });
 	const setFrontTablePref = useCallback(value => { setFrontTable(value); try { localStorage.setItem('pmos.frontTable', value ? '1' : '0'); } catch (error) { /* ignore */ } }, []);
 	const selectPort = useCallback(port => {
@@ -36,12 +38,21 @@ function App() {
 		const client = new ConfigdClient({
 			onStatus: next => setStatus(next), onConfig: next => { setConfig(next); setConfigOnDisk(next); setDiff({}); },
 			onConnection: setConnected, onConnectionState: setConnectionState, onAuth: next => { setAuth(next); setError(null); setConnectionState(`Authenticated as ${next.username} (${next.role}).`); },
-			onAuthRequired: () => { setAuth(null); setConfig(null); setConfigOnDisk(null); setDiff({}); setStatus({}); }, onError: setError,
+			onAuthRequired: () => {
+				setConfig(null); setConfigOnDisk(null); setDiff({}); setStatus({});
+				const stored = loadSession();
+				if (!stored) { setAuth(null); return; }
+				if (resumingRef.current) return;
+				resumingRef.current = true;
+				clientRef.current?.resume(stored.token)
+					.catch(() => { clearSession(); setAuth(null); })
+					.finally(() => { resumingRef.current = false; });
+			}, onError: setError,
 		});
 		clientRef.current = client; client.connect(); return () => { client.close(); clientRef.current = null; };
 	}, []);
-	const login = useCallback(async (username, password) => { setError(null); try { const response = await clientRef.current.authenticate(username, password); setAuth(response.data); } catch (failure) { setError(failure.message); } }, []);
-	const logout = useCallback(async () => { try { await clientRef.current.request('logout'); } catch (failure) { setError(failure.message); } finally { setAuth(null); setConfig(null); setConfigOnDisk(null); setStatus({}); } }, []);
+	const login = useCallback(async (username, password, remember) => { setError(null); try { const response = await clientRef.current.authenticate(username, password, remember); if (response.data?.token) saveSession({ token: response.data.token, expires_at: response.data.expires_at, username: response.data.username }, remember); setAuth(response.data); } catch (failure) { setError(failure.message); } }, []);
+	const logout = useCallback(async () => { try { await clientRef.current.request('logout'); } catch (failure) { setError(failure.message); } finally { clearSession(); setAuth(null); setConfig(null); setConfigOnDisk(null); setStatus({}); } }, []);
 	const updateRoot = useCallback((path, value) => setConfig(previous => { const updated = setPath(previous, path, value); setDiff(computeDiff(updated, configOnDisk) ?? {}); return updated; }), [configOnDisk]);
 	const updatePort = useCallback((port, path, value) => setConfig(previous => { const updated = structuredClone(previous); updated.ports[port] = setPath(updated.ports[port], path, value); setDiff(computeDiff(updated, configOnDisk) ?? {}); return updated; }), [configOnDisk]);
 	const updatePortMulti = useCallback((port, updates) => setConfig(previous => { const updated = structuredClone(previous); let next = updated.ports[port]; for (const [path, value] of Object.entries(updates)) next = setPath(next, path, value); updated.ports[port] = next; setDiff(computeDiff(updated, configOnDisk) ?? {}); return updated; }), [configOnDisk]);

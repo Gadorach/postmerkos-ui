@@ -68,16 +68,21 @@ function FirmwarePane({ client, connected, config, compatibility }) {
 	const [repositoryText, setRepositoryText] = useState('');
 	const [repositoryResult, setRepositoryResult] = useState(null);
 	const [error, setError] = useState('');
+	// configd is single-threaded; a slow upload starves the status poll and its
+	// timeouts surface as spurious "Request timed out" errors. Pause polling while
+	// an upload is in flight.
+	const uploadingRef = useRef(false);
 	useEffect(() => {
 		if (!connected) return undefined;
 		let stopped = false;
 		const poll = async () => {
+			if (uploadingRef.current) return;
 			try {
 				const [nextStatus, nextRepositories] = await Promise.all([
 					client.request('firmware_status'), client.request('firmware_repo_get'),
 				]);
-				if (!stopped) { setStatus(nextStatus.data); setRepositories(nextRepositories.data); setRepositoryText(previous => previous || JSON.stringify(nextRepositories.data, null, 2)); }
-			} catch (failure) { if (!stopped) setError(failure.message); }
+				if (!stopped && !uploadingRef.current) { setStatus(nextStatus.data); setRepositories(nextRepositories.data); setRepositoryText(previous => previous || JSON.stringify(nextRepositories.data, null, 2)); }
+			} catch (failure) { if (!stopped && !uploadingRef.current) setError(failure.message); }
 		};
 		poll(); const timer = setInterval(poll, 1500);
 		return () => { stopped = true; clearInterval(timer); };
@@ -96,11 +101,12 @@ function FirmwarePane({ client, connected, config, compatibility }) {
 			} catch (failure) { setError(`Backup could not be prepared: ${failure.message}`); return; }
 		} else if (!globalThis.confirm('Continue without an external configuration backup?')) return;
 		setUpload({ phase: 'starting', progress: 0 });
+		uploadingRef.current = true;
 		try {
 			const response = await client.uploadFirmware(file, { manifestFile, overlay, force, acceptUntested, onProgress: setUpload });
 			setReady(response.data);
 		} catch (failure) { setError(failure.message); }
-		finally { setUpload(null); }
+		finally { uploadingRef.current = false; setUpload(null); }
 	};
 	const begin = async () => {
 		if (!ready?.token || !globalThis.confirm('Begin flashing now? Management connections will close and the switch will reboot.')) return;

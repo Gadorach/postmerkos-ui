@@ -77,9 +77,13 @@ export class ConfigdClient {
 		}
 		onProgress?.({ phase: 'starting', progress: 0 });
 		await this.request('firmware_upload_cancel').catch(() => {});
-		await this.request('firmware_upload_start', {
+		const startResponse = await this.request('firmware_upload_start', {
 			name: file.name, size: file.size, overlay, force, accept_untested: acceptUntested, manifest,
-		}, { timeout: 15000 });
+		}, { timeout: 30000 });
+		const startToken = startResponse?.data?.token;
+		// Stream the image. A failure in THIS loop means the socket dropped
+		// mid-upload, so cancel the partial staged file. A slow-but-complete upload
+		// must be allowed to reach firmware_upload_finish.
 		try {
 			const chunkSize = 64 * 1024;
 			for (let offset = 0; offset < file.size; offset += chunkSize) {
@@ -93,12 +97,19 @@ export class ConfigdClient {
 					while (this.socket?.bufferedAmount > 256 * 1024) await sleep(25);
 				}
 			}
-			onProgress?.({ phase: 'verifying', progress: 100 });
-			return await this.request('firmware_upload_finish', undefined, { timeout: 30000 });
 		} catch (error) {
 			this.request('firmware_upload_cancel').catch(() => {});
 			throw error;
 		}
+		onProgress?.({ phase: 'verifying', progress: 100 });
+		// Validation reads/hashes the whole image on a slow mipsel CPU and can take
+		// minutes. Wait generously, and do NOT cancel on a timeout here — the server
+		// may still be validating a complete, valid image, and cancelling would
+		// delete the staged upload (forcing a full re-upload).
+		const finishResponse = await this.request('firmware_upload_finish', undefined, { timeout: 240000 });
+		if (finishResponse?.data && !finishResponse.data.token && startToken)
+			finishResponse.data.token = startToken;
+		return finishResponse;
 	}
 
 	beginFirmware(token) {

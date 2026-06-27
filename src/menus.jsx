@@ -443,6 +443,13 @@ export function CompatibilityNotice({ client, notice, onDismiss }) {
 			onDismiss?.();
 		} catch (failure) { setError(failure.message); }
 	};
+	const submit = async () => {
+		try {
+			const data = report ?? (await client.request('compatibility_report')).data;
+			setReport(data);
+			globalThis.open(buildIssueUrl(data), '_blank', 'noopener');
+		} catch (failure) { setError(failure.message); }
+	};
 	return <dialog className="management-dialog compatibility-dialog" ref={ref}>
 		<div className="tool-dialog">
 			<div className="dialog-body">
@@ -450,6 +457,7 @@ export function CompatibilityNotice({ client, notice, onDismiss }) {
 				<p>{notice.message}</p>
 				<p>Model: <strong>{notice.model}</strong><br />Firmware: <strong>{notice.firmware}</strong></p>
 				<div className="button-row">
+					<button className="btn-primary" onClick={submit}><UploadIcon /> Submit report</button>
 					<button className="btn-secondary" onClick={async () => {
 						try { const response = await client.request('compatibility_report'); setReport(response.data); }
 						catch (failure) { setError(failure.message); }

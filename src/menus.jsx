@@ -7,6 +7,7 @@ import {
 	ChipIcon, MonitorIcon, GlobeIcon, GridIcon, ShareIcon, UsersIcon, ServerIcon, ActivityIcon, ClockIcon, TerminalIcon,
 	CheckIcon, PlusIcon, TrashIcon, DownloadIcon, UploadIcon, EyeIcon, RefreshIcon, DiscardIcon,
 } from './icons';
+import { buildIssueUrl } from './compat';
 
 function ModalButton({ label, title, className = '', children, onOpen, onClose }) {
 	const ref = useRef();
@@ -295,9 +296,44 @@ function TimePane({ client }) {
 
 function SystemPane({ client, status }) {
 	const [report, setReport] = useState(null);
-	const loadReport = async () => { const response = await client.request('compatibility_report'); setReport(response.data); };
-	const downloadReport = async () => { const response = report ?? (await client.request('compatibility_report')).data; downloadBlob(new Blob([JSON.stringify(response, null, 2)], { type: 'application/json' }), `postmerkos-compatibility-${response.model}-${response.firmware}.json`); };
-	return <div className="tab-pane"><section><h3>System information</h3><dl className="system-grid"><div><dt>Model</dt><dd>{status.device}</dd></div><div><dt>Firmware</dt><dd>{status.release?.version ?? 'unknown'}</dd></div><div><dt>Compatibility</dt><dd>{status.capabilities?.compatibility}</dd></div><div><dt>Ports</dt><dd>{status.capabilities?.port_count}</dd></div><div><dt>Local time</dt><dd>{status.time?.local}</dd></div><div><dt>UTC</dt><dd>{status.time?.utc}</dd></div></dl></section><section><h3>Compatibility report</h3><div className="button-row"><button className="btn-secondary" onClick={loadReport}><EyeIcon /> View report</button><button className="btn-secondary" onClick={downloadReport}><DownloadIcon /> Download report</button></div>{report && <pre>{JSON.stringify(report, null, 2)}</pre>}</section></div>;
+	const [error, setError] = useState('');
+	useEffect(() => {
+		client.request('compatibility_report')
+			.then(response => setReport(response.data))
+			.catch(failure => setError(failure.message));
+	}, [client]);
+	const download = () => {
+		if (!report) return;
+		downloadBlob(new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' }),
+			`postmerkos-compatibility-${report.model}-${report.firmware}.json`);
+	};
+	const submit = () => { if (report) globalThis.open(buildIssueUrl(report), '_blank', 'noopener'); };
+	const poe = report && (report.poe_supported ? (report.poe_available ? 'available' : 'supported') : 'not supported');
+	return <div className="tab-pane">
+		<section><h3>System information</h3><dl className="system-grid"><div><dt>Model</dt><dd>{status.device}</dd></div><div><dt>Firmware</dt><dd>{status.release?.version ?? 'unknown'}</dd></div><div><dt>Compatibility</dt><dd>{status.capabilities?.compatibility}</dd></div><div><dt>Ports</dt><dd>{status.capabilities?.port_count}</dd></div><div><dt>Local time</dt><dd>{status.time?.local}</dd></div><div><dt>UTC</dt><dd>{status.time?.utc}</dd></div></dl></section>
+		<section><h3>Compatibility report</h3>
+			{error && <div className="error">{error}</div>}
+			{report && <div className="compat-card">
+				<div className="compat-head">
+					<strong>{report.model}</strong>
+					<span className={`compat-badge compat-${report.compatibility}`}>{report.compatibility}</span>
+					<span className="compat-fw">firmware {report.firmware}</span>
+				</div>
+				<dl className="compat-grid">
+					<div><dt>Family</dt><dd>{report.family}</dd></div>
+					<div><dt>Ports</dt><dd>{report.port_count} ({report.copper_ports} copper · {report.uplink_ports} uplink)</dd></div>
+					<div><dt>PoE</dt><dd>{poe} · {report.poe_controllers} controllers</dd></div>
+					<div><dt>Switch instances</dt><dd>{report.switch_instances}</dd></div>
+					<div><dt>MAC</dt><dd>{report.mac_oui}</dd></div>
+				</dl>
+				<div className="button-row">
+					<button className="btn-primary" onClick={submit}><UploadIcon /> Submit report</button>
+					<button className="btn-secondary" onClick={download}><DownloadIcon /> Download</button>
+				</div>
+				<details className="compat-details"><summary>Show details</summary><pre>{JSON.stringify(report, null, 2)}</pre></details>
+			</div>}
+		</section>
+	</div>;
 }
 
 function SwitchingPane({ config, updateRoot }) {

@@ -1216,3 +1216,18 @@ th.sortable:hover {
 .ssh-key-main { display: flex; flex-direction: column; min-width: 0; }
 .ssh-key-main code { font-size: 0.75rem; color: var(--muted, #888); overflow-wrap: anywhere; }
 .ssh-empty { color: var(--muted, #888); font-style: italic; }
+
+/* Compatibility report card */
+.compat-card { display: grid; gap: 0.7rem; }
+.compat-head { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+.compat-head strong { font-size: 1.05rem; color: var(--text-bright); }
+.compat-fw { color: var(--text-muted); margin-left: auto; }
+.compat-badge { padding: 0.1rem 0.6rem; border-radius: 999px; font-size: 0.8rem; font-weight: 700; border: 1px solid currentColor; text-transform: capitalize; }
+.compat-badge.compat-confirmed { color: #a3be8c; background: color-mix(in srgb, #a3be8c 16%, transparent); }
+.compat-badge.compat-untested { color: #ebcb8b; background: color-mix(in srgb, #ebcb8b 16%, transparent); }
+.compat-badge.compat-known-incompatible { color: #bf616a; background: color-mix(in srgb, #bf616a 16%, transparent); }
+.compat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); gap: 0.5rem; margin: 0; }
+.compat-grid dt { color: var(--text-muted); font-size: 0.82rem; }
+.compat-grid dd { margin: 0.15rem 0 0; overflow-wrap: anywhere; }
+.compat-details summary { cursor: pointer; color: var(--text-muted); }
+.compat-details pre { margin-top: 0.5rem; }

@@ -103,14 +103,46 @@ export class ConfigdClient {
 			throw error;
 		}
 		onProgress?.({ phase: 'verifying', progress: 100 });
-		// Validation reads/hashes the whole image on a slow mipsel CPU and can take
-		// minutes. Wait generously, and do NOT cancel on a timeout here — the server
-		// may still be validating a complete, valid image, and cancelling would
-		// delete the staged upload (forcing a full re-upload).
-		const finishResponse = await this.request('firmware_upload_finish', undefined, { timeout: 240000 });
-		if (finishResponse?.data && !finishResponse.data.token && startToken)
-			finishResponse.data.token = startToken;
-		return finishResponse;
+		// Validation is an asynchronous configd job. Polling makes the operation
+		// recoverable across request timeouts and WebSocket reconnects without
+		// forcing the image to be uploaded again.
+		let finishResponse;
+		try {
+			finishResponse = await this.request('firmware_upload_finish', undefined, { timeout: 30000 });
+		} catch (error) {
+			// A transport timeout can race with a successful server-side handoff.
+			// Query the durable validation job before declaring the upload lost.
+			if (!/not connected|connection closed|connection lost|timed out|session expired|unauthorized/i.test(error.message)) throw error;
+		}
+		if (finishResponse?.data?.ready) return finishResponse;
+		const deadline = Date.now() + 15 * 60 * 1000;
+		let missingPolls = 0;
+		while (Date.now() < deadline) {
+			await sleep(1000);
+			let statusResponse;
+			try {
+				statusResponse = await this.request('firmware_upload_status', undefined, { timeout: 15000 });
+			} catch (error) {
+				// The client reconnect loop may still be restoring the transport and
+				// token. Keep the server-side validation job intact and retry.
+				if (/not connected|connection closed|connection lost|timed out|session expired|unauthorized/i.test(error.message)) continue;
+				throw error;
+			}
+			const status = statusResponse?.data ?? {};
+			if (status.ready) {
+				if (!status.token && startToken) status.token = startToken;
+				return { ...statusResponse, type: 'firmware_ready', data: status };
+			}
+			if (status.state === 'failed')
+				throw new Error(status.error || 'Firmware validation failed');
+			const missing = status.state === 'idle' ||
+				(!status.state && !status.active && !status.ready && !status.validating);
+			if (missing && ++missingPolls >= 5)
+				throw new Error('The staged firmware upload is no longer available; upload the image again.');
+			if (!missing) missingPolls = 0;
+		onProgress?.({ phase: 'verifying', progress: 100, state: status.state ?? 'reconnecting' });
+		}
+		throw new Error('Firmware validation did not finish within 15 minutes; the staged job remains queryable from firmware status.');
 	}
 
 	beginFirmware(token) {

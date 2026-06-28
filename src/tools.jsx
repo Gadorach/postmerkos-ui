@@ -49,15 +49,38 @@ export function FirmwareTool({ client, connected, config, compatibility = 'untes
 	const [status, setStatus] = useState(null);
 	const [error, setError] = useState('');
 	const [active, setActive] = useState(false);
+	const uploadingRef = useRef(false);
 	useEffect(() => {
 		if (!active || !connected) return undefined;
 		let stopped = false;
 		const poll = async () => {
+			if (uploadingRef.current) return;
 			try {
-				const response = await client.request('firmware_status'); if (!stopped) setStatus(response.data);
-				const repoResponse = await client.request('firmware_repo_get'); if (!stopped) setRepositories(repoResponse.data);
+				const [response, repoResponse, uploadResponse] = await Promise.all([
+					client.request('firmware_status'),
+					client.request('firmware_repo_get'),
+					client.request('firmware_upload_status'),
+				]);
+				if (!stopped && !uploadingRef.current) {
+					setStatus(response.data);
+					setRepositories(repoResponse.data);
+					const staged = uploadResponse.data ?? {};
+					if (staged.ready) {
+						setReady(staged);
+						setUpload(null);
+					} else if (staged.state === 'validating') {
+						setReady(null);
+						setUpload({ phase: 'verifying', progress: staged.progress ?? 100, state: staged.state });
+					} else if (staged.state === 'failed') {
+						setReady(null);
+						setUpload(null);
+						setError(staged.error || 'Firmware validation failed.');
+					} else if (!staged.active) {
+						setUpload(null);
+					}
+				}
 			}
-			catch (pollError) { if (!stopped) setError(pollError.message); }
+			catch (pollError) { if (!stopped && !uploadingRef.current) setError(pollError.message); }
 		};
 		poll(); const timer = setInterval(poll, 1500);
 		return () => { stopped = true; clearInterval(timer); };
@@ -71,10 +94,12 @@ export function FirmwareTool({ client, connected, config, compatibility = 'untes
 			catch (backupError) { setError(`Backup could not be prepared: ${backupError.message}`); return; }
 		}
 		setUpload({ phase: 'starting', progress: 0 });
+		uploadingRef.current = true;
 		try {
 			const response = await client.uploadFirmware(file, { manifestFile, overlay, force, acceptUntested, onProgress: setUpload });
-			setReady(response.data); setUpload(null);
-		} catch (uploadError) { setError(uploadError.message); setUpload(null); }
+			setReady(response.data);
+		} catch (uploadError) { setError(uploadError.message); }
+		finally { uploadingRef.current = false; setUpload(null); }
 	};
 	const begin = async () => {
 		if (!ready?.token) return;

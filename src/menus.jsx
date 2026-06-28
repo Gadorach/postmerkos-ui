@@ -2,13 +2,14 @@ import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { createBackup, downloadBlob, readBackup } from './backup';
 import NetworkPanel from './network';
 import Table from './table';
+import { CogIcon, UpdateIcon } from './icons';
 
 function ModalButton({ label, title, className = '', children, onOpen, onClose }) {
 	const ref = useRef();
 	const open = () => { onOpen?.(); ref.current?.showModal(); };
 	const close = () => ref.current?.close();
 	return <>
-		<button className={`toolbar-button ${className}`} title={title ?? label} onClick={open}>{label}</button>
+		<button className={`toolbar-button ${className}`} title={title ?? label} aria-label={typeof title === 'string' ? title : undefined} onClick={open}>{label}</button>
 		<dialog className="management-dialog" ref={ref} onClose={onClose} onClick={event => { if (event.target === ref.current) close(); }}>
 			{children({ close })}
 		</dialog>
@@ -151,7 +152,7 @@ function FirmwarePane({ client, connected, config, compatibility }) {
 export function UpdateMenu(props) {
 	const [tab, setTab] = useState('backup');
 	const tabs = [{ id: 'backup', label: 'Configuration Backup' }, { id: 'firmware', label: 'Firmware' }];
-	return <ModalButton label="Update" title="Configuration backup, restore, and firmware update">
+	return <ModalButton label={<UpdateIcon />} className="icon-button" title="Update — configuration backup, restore, and firmware">
 		{({ close }) => <div className="tool-dialog wide-dialog"><DialogHeader title="Update" close={close} /><Tabs tabs={tabs} selected={tab} onSelect={setTab} />
 			{tab === 'backup' ? <BackupPane {...props} canRestore={props.hasCapability('config.restore')} /> : props.hasCapability('firmware.update') ? <FirmwarePane {...props} /> : <div className="warning">Firmware updates require administrator access.</div>}
 		</div>}
@@ -200,6 +201,48 @@ function AccountPane({ client, auth, canManage }) {
 	const remove = async username => { if (username === 'root' || !globalThis.confirm(`Delete ${username}?`)) return; setError(''); try { const response = await client.request('user_delete', { username }); setUsers(response.data?.users ?? []); setNotice(`${username} deleted.`); } catch (failure) { setError(failure.message); } };
 	const changePassword = async event => { event.preventDefault(); setError(''); try { await client.request('password_change', { username: passwordTarget || auth.username, current_password: currentPassword, new_password: replacementPassword }); setCurrentPassword(''); setReplacementPassword(''); setNotice('Password updated.'); } catch (failure) { setError(failure.message); } };
 	return <div className="tab-pane"><h3>Accounts and roles</h3><div className="account-grid">{users.map(user => <div className="account-row" key={user.username}><strong>{user.username}</strong><select value={user.role} disabled={!canManage || user.username === 'root'} onChange={event => setRole(user.username, event.currentTarget.value)}><option value="admin">Administrator</option><option value="operator">Operator</option><option value="viewer">Viewer</option></select>{canManage && <button disabled={user.username === 'root'} onClick={() => remove(user.username)}>Delete</button>}</div>)}</div><form onSubmit={changePassword}><h3>Change password</h3><label>Account<select value={passwordTarget} onChange={event => setPasswordTarget(event.currentTarget.value)}>{users.filter(user => canManage || user.username === auth.username).map(user => <option key={user.username} value={user.username}>{user.username}</option>)}</select></label><label>Current password<input type="password" value={currentPassword} onInput={event => setCurrentPassword(event.currentTarget.value)} /></label><label>New password<input type="password" value={replacementPassword} onInput={event => setReplacementPassword(event.currentTarget.value)} /></label><button disabled={!currentPassword || replacementPassword.length < 8}>Change Password</button></form>{canManage && <form onSubmit={create}><h3>Create account</h3><label>Username<input value={newUser} onInput={event => setNewUser(event.currentTarget.value)} /></label><label>Initial password<input type="password" value={newPassword} onInput={event => setNewPassword(event.currentTarget.value)} /></label><label>Role<select value={newRole} onChange={event => setNewRole(event.currentTarget.value)}><option value="admin">Administrator</option><option value="operator">Operator</option><option value="viewer">Viewer</option></select></label><button disabled={!newUser || newPassword.length < 8}>Create Account</button></form>}{notice && <div className="notice">{notice}</div>}{error && <div className="error">{error}</div>}</div>;
+}
+
+async function sshFingerprint(key) {
+	try {
+		const blob = key.trim().split(/\s+/)[1];
+		if (!blob) return '';
+		const bytes = Uint8Array.from(atob(blob), c => c.charCodeAt(0));
+		const digest = await crypto.subtle.digest('SHA-256', bytes);
+		const b64 = btoa(String.fromCharCode(...new Uint8Array(digest))).replace(/=+$/, '');
+		return `SHA256:${b64}`;
+	} catch (failure) { return ''; }
+}
+
+function SshKeysPane({ client, canManage }) {
+	const [keys, setKeys] = useState([]);
+	const [prints, setPrints] = useState({});
+	const [label, setLabel] = useState('');
+	const [material, setMaterial] = useState('');
+	const [notice, setNotice] = useState(''); const [error, setError] = useState('');
+	const load = async data => {
+		const list = data ?? (await client.request('ssh_key_list')).data?.keys ?? [];
+		setKeys(list);
+		const entries = await Promise.all(list.map(async k => [k.key, await sshFingerprint(k.key)]));
+		setPrints(Object.fromEntries(entries));
+	};
+	useEffect(() => { if (canManage) load().catch(failure => setError(failure.message)); }, [canManage]);
+	const add = async event => {
+		event.preventDefault(); setError('');
+		try { const response = await client.request('ssh_key_add', { label, key: material.trim() }); await load(response.data?.keys); setLabel(''); setMaterial(''); setNotice('Key added.'); }
+		catch (failure) { setError(failure.message); }
+	};
+	const remove = async key => {
+		if (!globalThis.confirm('Remove this SSH key?')) return; setError('');
+		try { const response = await client.request('ssh_key_remove', { key }); await load(response.data?.keys); setNotice('Key removed.'); }
+		catch (failure) { setError(failure.message); }
+	};
+	if (!canManage) return null;
+	return <div className="tab-pane"><h3>SSH keys (root)</h3>
+		<p className="ssh-hint">Public keys that authorize SSH login as root. Password login can be disabled separately under Services.</p>
+		<div className="ssh-key-list">{keys.length === 0 && <div className="ssh-empty">No keys configured.</div>}{keys.map(k => <div className="ssh-key-row" key={k.key}><div className="ssh-key-main"><strong>{k.label || (k.key.split(/\s+/)[2] ?? k.key.split(/\s+/)[0])}</strong><code>{prints[k.key] || k.key.split(/\s+/)[0]}</code></div><button onClick={() => remove(k.key)}>Remove</button></div>)}</div>
+		<form onSubmit={add}><h3>Add key</h3><label>Label (optional)<input value={label} onInput={event => setLabel(event.currentTarget.value)} /></label><label>Public key<textarea rows="3" value={material} placeholder="ssh-ed25519 AAAA... user@host" onInput={event => setMaterial(event.currentTarget.value)} /></label><button disabled={!material.trim()}>Add Key</button></form>
+		{notice && <div className="notice">{notice}</div>}{error && <div className="error">{error}</div>}</div>;
 }
 
 function ServicePane({ client }) {
@@ -259,14 +302,14 @@ export function ConfigurationMenu({ client, auth, config, status, updateRoot, up
 		...(hasCapability('terminal.exec') ? [{ id: 'terminal', label: 'Terminal' }] : []),
 	], [hasCapability]);
 	const [tab, setTab] = useState('system');
-	return <ModalButton label="Configuration" title="Switch configuration and system tools">
+	return <ModalButton label={<CogIcon />} className="icon-button" title="Configuration — switch configuration and system tools">
 		{({ close }) => <div className="tool-dialog extra-wide-dialog"><DialogHeader title="Configuration" close={close} /><Tabs tabs={available} selected={tab} onSelect={setTab} />
 			{tab === 'system' && <SystemPane client={client} status={status} />}
 			{tab === 'display' && <div className="tab-pane"><h3>Display</h3><label className="checkbox-line"><input type="checkbox" checked={frontTable} onChange={event => onFrontTableChange?.(event.currentTarget.checked)} /> View all ports on the front page (uncheck for a focused per-port configuration window)</label><p>When enabled, the full port table is shown on the front page and clicking a port in the diagram scrolls to its row. When disabled, clicking a port opens its focused configuration window. This preference is stored in your browser.</p></div>}
 			{tab === 'network' && <NetworkPanel config={config} status={status} updateConfig={updateRoot} diff={diff} />}
 			{tab === 'ports' && <div className="tab-pane all-ports-pane"><Table ports={config.ports} status={status} poe={poe} updatePort={updatePort} updatePortMulti={updatePortMulti} diff={diff} /></div>}
 			{tab === 'switching' && <SwitchingPane config={config} updateRoot={updateRoot} />}
-			{tab === 'accounts' && <AccountPane client={client} auth={auth} canManage={hasCapability('users.manage')} />}
+			{tab === 'accounts' && <><AccountPane client={client} auth={auth} canManage={hasCapability('users.manage')} /><SshKeysPane client={client} canManage={hasCapability('users.manage')} /></>}
 			{tab === 'services' && (hasCapability('services.manage') ? <ServicePane client={client} /> : <div className="warning">Service configuration requires administrator access.</div>)}
 			{tab === 'time' && (hasCapability('services.manage') ? <TimePane client={client} /> : <SystemPane client={client} status={status} />)}
 			{tab === 'terminal' && <TerminalPane client={client} />}

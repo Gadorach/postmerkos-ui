@@ -7,6 +7,7 @@ import Legend from './legend';
 import Login from './login';
 import { CompatibilityNotice, ConfigurationMenu, PortEditor, UpdateMenu } from './menus';
 import Table from './table';
+import { DoorIcon } from './icons';
 
 const setPath = (obj, path, value) => {
 	const keys = path.split('.'); const result = structuredClone(obj); let current = result;
@@ -24,7 +25,7 @@ const computeDiff = (desired, current) => {
 function App() {
 	const [auth, setAuth] = useState(null); const [config, setConfig] = useState(null); const [configOnDisk, setConfigOnDisk] = useState(null);
 	const [diff, setDiff] = useState({}); const [status, setStatus] = useState({}); const [error, setError] = useState(null); const [notice, setNotice] = useState(null);
-	const [uploading, setUploading] = useState(false); const [connected, setConnected] = useState(false); const [connectionState, setConnectionState] = useState('Connecting…'); const [selectedPort, setSelectedPort] = useState(null);
+	const [uploading, setUploading] = useState(false); const [connected, setConnected] = useState(false); const [connectionState, setConnectionState] = useState('Connecting…'); const [selectedPort, setSelectedPort] = useState(null); const [dismissed, setDismissed] = useState(() => new Set());
 	const clientRef = useRef(null);
 	const [frontTable, setFrontTable] = useState(() => { try { return localStorage.getItem('pmos.frontTable') !== '0'; } catch (error) { return true; } });
 	const setFrontTablePref = useCallback(value => { setFrontTable(value); try { localStorage.setItem('pmos.frontTable', value ? '1' : '0'); } catch (error) { /* ignore */ } }, []);
@@ -63,26 +64,40 @@ function App() {
 		observer.observe(panel);
 		return () => observer.disconnect();
 	}, [config, frontTable]);
+	useEffect(() => { if (!error) return undefined; const timer = setTimeout(() => setError(null), 6000); return () => clearTimeout(timer); }, [error]);
+	useEffect(() => { if (!notice) return undefined; const timer = setTimeout(() => setNotice(null), 6000); return () => clearTimeout(timer); }, [notice]);
+	const dismissToast = useCallback(id => setDismissed(previous => { const next = new Set(previous); next.add(id); return next; }), []);
 	if (!auth) return <Login connected={connected} connectionState={connectionState} onLogin={login} error={error} />;
 	const client = clientRef.current; const hasCapability = capability => (auth?.capabilities ?? []).includes(capability); const canWrite = hasCapability('switching.write') || hasCapability('network.write'); const poe = Boolean(status?.capabilities?.poe?.supported);
+	const toasts = [];
+	if (error) toasts.push({ id: 'error', kind: 'error', text: error, onClose: () => setError(null) });
+	if (notice) toasts.push({ id: 'notice', kind: 'notice', text: notice, onClose: () => setNotice(null) });
+	if (status?.security?.default_password_active && !dismissed.has('default-password')) toasts.push({ id: 'default-password', kind: 'warning', text: 'The root password is still set to the switch serial number — change it under Configuration → Accounts.', onClose: () => dismissToast('default-password') });
+	(status.errors ?? []).forEach((item, index) => { const id = `err-${item.source}-${index}`; if (!dismissed.has(id)) toasts.push({ id, kind: 'warning', text: `${item.source}: ${item.message}`, onClose: () => dismissToast(id) }); });
 	return <div>
 		<header id="heading">
-			<div className="heading-bar"><div><h1>postmerkOS</h1><span className="version">{status?.release?.version ?? 'unknown firmware'}</span></div><nav className="heading-actions">
-				<Legend poe={poe} />
-				{client && config && <UpdateMenu client={client} connected={connected} config={configOnDisk} compatibility={status?.capabilities?.compatibility} hasCapability={hasCapability} />}
-				{client && config && <ConfigurationMenu client={client} auth={auth} config={config} status={status} updateRoot={updateRoot} updatePort={updatePort} updatePortMulti={updatePortMulti} diff={diff} poe={poe} hasCapability={hasCapability} frontTable={frontTable} onFrontTableChange={setFrontTablePref} />}
-				<button className="toolbar-button" onClick={logout}>Logout</button>
-			</nav></div>
-			<div className="device-summary"><div>{status.device}</div><div>{status.time?.local ?? status.datetime}</div><div>{status.network?.ipv4?.address ?? 'no management address'}</div>{Object.entries(status.temperature ?? {}).map(([type, values]) => <div key={type}>{type}: {(values ?? []).map(value => Number(value).toFixed(1)).join(', ')} °C</div>)}</div>
-			<div className={`connection-state ${connected ? 'connected' : 'disconnected'}`}>{connected ? `Connected as ${auth.username} (${auth.role})` : 'Disconnected'}</div>
-			{status?.security?.default_password_active && <div className="warning">The root password is still set to the switch serial number.</div>}
-			{error && <div className="error">{error}</div>}{notice && <div className="notice">{notice}</div>}
-			{(status.errors ?? []).map((item, index) => <div className="warning" key={`${item.source}-${index}`}>{item.source}: {item.message}</div>)}
+			<div className="heading-bar">
+				<div className="brand"><h1>postmerkOS</h1><span className="version">{status?.release?.version ?? 'unknown firmware'}</span></div>
+				<div className="device-summary">
+					<span className="ds-item ds-device">{status.device ?? '—'}</span>
+					<span className="ds-item">{status.network?.ipv4?.address ?? 'no management address'}</span>
+					<span className="ds-item">{status.time?.local ?? status.datetime ?? ''}</span>
+					{Object.entries(status.temperature ?? {}).map(([type, values]) => <span className="ds-item" key={type}>{type} {(values ?? []).map(value => Number(value).toFixed(1)).join(' / ')} °C</span>)}
+					<span className={`conn-pill ${connected ? 'connected' : 'disconnected'}`}>{connected ? `${auth.username} · ${auth.role}` : 'disconnected'}</span>
+				</div>
+				<nav className="heading-actions">
+					<Legend poe={poe} />
+					{client && config && <UpdateMenu client={client} connected={connected} config={configOnDisk} compatibility={status?.capabilities?.compatibility} hasCapability={hasCapability} />}
+					{client && config && <ConfigurationMenu client={client} auth={auth} config={config} status={status} updateRoot={updateRoot} updatePort={updatePort} updatePortMulti={updatePortMulti} diff={diff} poe={poe} hasCapability={hasCapability} frontTable={frontTable} onFrontTableChange={setFrontTablePref} />}
+					<button className="toolbar-button icon-button" title="Logout" aria-label="Logout" onClick={logout}><DoorIcon /></button>
+				</nav>
+			</div>
 		</header>
 		{config && <main className="front-panel-view"><Ports config={config} status={status} poe={poe} selectedPort={selectedPort} onSelectPort={selectPort} />{frontTable ? <Table ports={config.ports} status={status} poe={poe} updatePort={updatePort} updatePortMulti={updatePortMulti} diff={diff} selectedPort={selectedPort} /> : <p className="front-panel-hint">Select a port to open its focused configuration window.</p>}</main>}
 		{!frontTable && client && config && <PortEditor client={client} selectedPort={selectedPort} onSelect={setSelectedPort} onClose={() => setSelectedPort(null)} config={config} status={status} poe={poe} updatePort={updatePort} updatePortMulti={updatePortMulti} diff={diff} />}
 		{client && <CompatibilityNotice client={client} notice={status?.compatibility_notice} onDismiss={() => setStatus(previous => ({ ...previous, compatibility_notice: { ...previous.compatibility_notice, required: false } }))} />}
 		{hasDiff && canWrite && <aside className="unsaved-changes" role="status"><div className="unsaved-copy"><strong>Unapplied configuration changes</strong><span>Apply these changes or discard them to restore the current switch configuration.</span></div><div className="unsaved-actions"><button onClick={discardChanges} disabled={uploading}>Discard Changes</button><button className="apply-button" onClick={uploadConfig} disabled={!connected || uploading}>{uploading ? 'Applying…' : 'Apply Changes'}</button></div></aside>}
+		{toasts.length > 0 && <div className="toast-stack" role="region" aria-label="Notifications">{toasts.map(toast => <div key={toast.id} className={`toast toast-${toast.kind}`} role={toast.kind === 'error' ? 'alert' : 'status'}><span className="toast-text">{toast.text}</span><button className="toast-close" aria-label="Dismiss" onClick={toast.onClose}>×</button></div>)}</div>}
 	</div>;
 }
 

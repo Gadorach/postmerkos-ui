@@ -7,8 +7,8 @@ import Legend from './legend';
 import Login from './login';
 import { CompatibilityNotice, ConfigurationMenu, PortEditor, UpdateMenu } from './menus';
 import Table from './table';
-import { clearSession, loadSession, saveSession } from './session';
 import { DoorIcon } from './icons';
+import { clearSession, loadSession, saveSession } from './session';
 
 const setPath = (obj, path, value) => {
 	const keys = path.split('.'); const result = structuredClone(obj); let current = result;
@@ -22,6 +22,14 @@ const computeDiff = (desired, current) => {
 	for (const key of Object.keys(desired)) { const value = computeDiff(desired[key], current[key]); if (value !== undefined && (typeof value !== 'object' || value === null || Object.keys(value).length)) result[key] = value; }
 	return result;
 };
+// Merge a partial patch (e.g. the operator's pending edits) onto a base object,
+// returning a new object. Scalars/arrays in the patch replace; objects recurse.
+const deepMerge = (base, patch) => {
+	if (patch === null || typeof patch !== 'object' || Array.isArray(patch)) return patch;
+	const out = (base && typeof base === 'object' && !Array.isArray(base)) ? { ...base } : {};
+	for (const key of Object.keys(patch)) out[key] = deepMerge(out[key], patch[key]);
+	return out;
+};
 
 function App() {
 	const [auth, setAuth] = useState(null); const [config, setConfig] = useState(null); const [configOnDisk, setConfigOnDisk] = useState(null);
@@ -29,6 +37,7 @@ function App() {
 	const [uploading, setUploading] = useState(false); const [connected, setConnected] = useState(false); const [connectionState, setConnectionState] = useState('Connecting…'); const [selectedPort, setSelectedPort] = useState(null); const [dismissed, setDismissed] = useState(() => new Set());
 	const clientRef = useRef(null);
 	const resumingRef = useRef(false);
+	const configOnDiskRef = useRef(null);
 	const [frontTable, setFrontTable] = useState(() => { try { return localStorage.getItem('pmos.frontTable') !== '0'; } catch (error) { return true; } });
 	const setFrontTablePref = useCallback(value => { setFrontTable(value); try { localStorage.setItem('pmos.frontTable', value ? '1' : '0'); } catch (error) { /* ignore */ } }, []);
 	const selectPort = useCallback(port => {
@@ -37,7 +46,22 @@ function App() {
 	}, [frontTable]);
 	useEffect(() => {
 		const client = new ConfigdClient({
-			onStatus: next => setStatus(next), onConfig: next => { setConfig(next); setConfigOnDisk(next); setDiff({}); },
+			onStatus: next => setStatus(next),
+			onConfig: next => {
+				// A polled config refresh updates the on-disk baseline, but must NOT clobber
+				// the operator's unsaved edits. Re-apply any pending changes (the diff vs the
+				// previous baseline) on top of the incoming config, so untouched fields refresh
+				// while in-progress input is preserved.
+				setConfig(previous => {
+					const baseline = configOnDiskRef.current;
+					const pending = (previous && baseline) ? (computeDiff(previous, baseline) ?? {}) : {};
+					if (!Object.keys(pending).length) { setDiff({}); return next; }
+					const merged = deepMerge(next, pending);
+					setDiff(computeDiff(merged, next) ?? {});
+					return merged;
+				});
+				setConfigOnDisk(next);
+			},
 			onConnection: setConnected, onConnectionState: setConnectionState, onAuth: next => { setAuth(next); setError(null); setConnectionState(`Authenticated as ${next.username} (${next.role}).`); },
 			onAuthRequired: () => {
 				setConfig(null); setConfigOnDisk(null); setDiff({}); setStatus({});
@@ -52,6 +76,9 @@ function App() {
 		});
 		clientRef.current = client; client.connect(); return () => { client.close(); clientRef.current = null; };
 	}, []);
+	// Mirror the on-disk baseline into a ref so the stable onConfig callback (created once
+	// above) can read the current baseline when merging in a polled refresh.
+	useEffect(() => { configOnDiskRef.current = configOnDisk; }, [configOnDisk]);
 	const login = useCallback(async (username, password, remember) => { setError(null); try { const response = await clientRef.current.authenticate(username, password, remember); if (response.data?.token) saveSession({ token: response.data.token, expires_at: response.data.expires_at, username: response.data.username }, remember); setAuth(response.data); } catch (failure) { setError(failure.message); } }, []);
 	const logout = useCallback(async () => { try { await clientRef.current.request('logout'); } catch (failure) { setError(failure.message); } finally { clearSession(); setAuth(null); setConfig(null); setConfigOnDisk(null); setStatus({}); } }, []);
 	const updateRoot = useCallback((path, value) => setConfig(previous => { const updated = setPath(previous, path, value); setDiff(computeDiff(updated, configOnDisk) ?? {}); return updated; }), [configOnDisk]);
@@ -99,7 +126,7 @@ function App() {
 				<nav className="heading-actions">
 					<Legend poe={poe} />
 					{client && config && <UpdateMenu client={client} connected={connected} config={configOnDisk} compatibility={status?.capabilities?.compatibility} hasCapability={hasCapability} />}
-					{client && config && <ConfigurationMenu client={client} auth={auth} config={config} status={status} updateRoot={updateRoot} updatePort={updatePort} updatePortMulti={updatePortMulti} diff={diff} poe={poe} hasCapability={hasCapability} frontTable={frontTable} onFrontTableChange={setFrontTablePref} />}
+					{client && config && <ConfigurationMenu client={client} auth={auth} config={config} status={status} updateRoot={updateRoot} updatePort={updatePort} updatePortMulti={updatePortMulti} diff={diff} poe={poe} hasCapability={hasCapability} frontTable={frontTable} onFrontTableChange={setFrontTablePref} onApply={uploadConfig} onDiscard={discardChanges} applying={uploading} connected={connected} />}
 					<button className="toolbar-button icon-button" title="Logout" aria-label="Logout" onClick={logout}><DoorIcon /></button>
 				</nav>
 			</div>

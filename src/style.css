@@ -11,6 +11,11 @@
 	--border: #4c566a;
 	--port-border: lightgray;
 	--button-hover: #434c5e;
+	--button-active: #4c566a;
+	--accent: #88c0d0;
+	--accent-strong: #8fbcbb;
+	--accent-text: #2e3440;
+	--danger: #bf616a;
 	--form-text: #eceff4;
 	--selection: #4c566a;
 }
@@ -27,6 +32,11 @@
 		--border: #d8dee9;
 		--port-border: grey;
 		--button-hover: #d8dee9;
+		--button-active: #c2cdde;
+		--accent: #5e81ac;
+		--accent-strong: #5e81ac;
+		--accent-text: #eceff4;
+		--danger: #bf616a;
 		--form-text: #2e3440;
 		--selection: #b8c5d6;
 	}
@@ -729,10 +739,14 @@ select {
 .login-card label, .tool-dialog label { display: grid; gap: 0.35rem; margin: 0.75rem 0; }
 .login-card input, .tool-dialog input:not([type="checkbox"]), .tool-dialog select { width: 100%; box-sizing: border-box; }
 .login-card button { width: 100%; margin-top: 0.75rem; }
-.tool-dialog { width: min(48rem, 82vw); max-height: 82vh; overflow: auto; }
-.dialog-heading { display: flex; align-items: center; gap: 1rem; border-bottom: 1px solid var(--border); margin-bottom: 1rem; }
-.dialog-heading h2 { margin: 0 0 0.75rem; color: var(--text-bright); }
-.dialog-heading button { margin-left: auto; margin-bottom: 0.75rem; }
+.tool-dialog { width: min(48rem, 82vw); max-height: 92vh; overflow: auto; }
+/* Sticky header zone: the heading + tab row stay put while the body scrolls,
+   and (with the pinned dialog top) keep a constant on-screen position across tabs. */
+.dialog-topbar { position: sticky; top: 0; z-index: 5; background: var(--bg); padding: 1.15rem 1.5rem 0; border-bottom: 1px solid var(--border); }
+.dialog-body { padding: 1.15rem 1.5rem 1.5rem; }
+.dialog-heading { display: flex; align-items: center; gap: 1rem; margin: 0 0 0.75rem; }
+.dialog-heading h2 { margin: 0; color: var(--text-bright); }
+.dialog-heading button { margin-left: auto; }
 .tool-dialog form { display: grid; gap: 0.5rem; }
 .checkbox-line { display: flex !important; grid-template-columns: auto 1fr; align-items: center; }
 .checkbox-line input { display: inline-block; width: auto; }
@@ -782,14 +796,35 @@ tbody tr.selected-port-row td:last-child { box-shadow: inset -2px 0 0 var(--focu
 .toolbar-button { min-width: 7.25rem; min-height: 2.55rem; display: inline-flex; align-items: center; justify-content: center; font-weight: 600; text-transform: none; }
 .toolbar-button.icon-button { min-width: 2.55rem; width: 2.55rem; padding: 0; }
 .toolbar-button.icon-button svg { width: 1.3rem; height: 1.3rem; display: block; }
-.management-dialog { width: min(96vw, 96rem); max-width: none; border: 1px solid var(--border); border-radius: 10px; padding: 0; background: var(--bg); color: var(--text); }
+/* Pin the dialog near the top of the viewport instead of vertically centering it.
+   Native <dialog> centers via auto margins, so its position shifted with each tab's
+   height ("jumping"). A fixed top margin keeps the heading/tab row at a constant spot. */
+.management-dialog { width: min(96vw, 96rem); max-width: none; margin: 4vh auto; border: 1px solid var(--border); border-radius: 10px; padding: 0; background: var(--bg); color: var(--text); overflow: hidden; }
 .management-dialog::backdrop { background: rgba(16, 20, 28, 0.72); }
 .wide-dialog { width: min(80rem, 92vw); }
 .extra-wide-dialog { width: min(94rem, 95vw); }
-.dialog-tabs { display: flex; gap: 0.35rem; flex-wrap: wrap; margin: 0 0 1rem; padding-bottom: 0.65rem; border-bottom: 1px solid var(--border); }
-.dialog-tabs button { background: transparent; border-color: var(--border); }
-.dialog-tabs button.active { background: var(--button-active); color: var(--text-bright); }
+.dialog-tabs { display: flex; gap: 0.35rem; flex-wrap: wrap; padding: 0 0 0.85rem; }
+.dialog-tabs button { display: inline-flex; align-items: center; gap: 0.4rem; background: transparent; border-color: var(--border); }
+.dialog-tabs button:hover { background: var(--button-hover); }
+.dialog-tabs button.active { background: var(--button-active); border-color: var(--accent); color: var(--text-bright); font-weight: 600; }
+.tab-ico { display: inline-flex; }
+.tab-ico svg { width: 1.05rem; height: 1.05rem; }
 .tab-pane { display: grid; gap: 0.85rem; min-height: 12rem; }
+
+/* Button hierarchy: primary (commit/create), secondary (default neutral), danger (destructive). */
+.btn-primary, .btn-secondary, .btn-danger { display: inline-flex; align-items: center; justify-content: center; gap: 0.45rem; font-weight: 600; }
+.btn-primary svg, .btn-secondary svg, .btn-danger svg { width: 1.05rem; height: 1.05rem; }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
+.btn-primary:hover:not(:disabled) { background: var(--accent-strong); border-color: var(--accent-strong); }
+.btn-danger { background: transparent; border-color: var(--danger); color: var(--danger); }
+.btn-danger:hover:not(:disabled) { background: color-mix(in srgb, var(--danger) 16%, transparent); }
+
+/* In-dialog apply/discard footer for configuration tabs (the floating banner is
+   occluded by the modal's top layer, so each config tab carries its own footer). */
+.pane-footer { position: sticky; bottom: 0; display: flex; align-items: center; gap: 1rem; margin: 0.35rem -1.5rem -1.5rem; padding: 0.8rem 1.5rem; background: var(--bg); border-top: 1px solid var(--border); }
+.pane-footer-status { color: var(--text-muted); font-size: 0.9rem; }
+.pane-footer-status.dirty { color: #ebcb8b; }
+.pane-footer-actions { display: flex; gap: 0.55rem; margin-left: auto; }
 .tab-pane > section, .system-card, .clone-pane, .tab-pane fieldset { border: 1px solid var(--border); border-radius: 7px; padding: 0.85rem; background: var(--bg-alt); }
 .tab-pane h3 { margin: 0 0 0.35rem; }
 .tab-pane pre { max-height: 28rem; overflow: auto; background: #11151d; padding: 0.8rem; border-radius: 6px; white-space: pre-wrap; }
@@ -1181,3 +1216,18 @@ th.sortable:hover {
 .ssh-key-main { display: flex; flex-direction: column; min-width: 0; }
 .ssh-key-main code { font-size: 0.75rem; color: var(--muted, #888); overflow-wrap: anywhere; }
 .ssh-empty { color: var(--muted, #888); font-style: italic; }
+
+/* Compatibility report card */
+.compat-card { display: grid; gap: 0.7rem; }
+.compat-head { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+.compat-head strong { font-size: 1.05rem; color: var(--text-bright); }
+.compat-fw { color: var(--text-muted); margin-left: auto; }
+.compat-badge { padding: 0.1rem 0.6rem; border-radius: 999px; font-size: 0.8rem; font-weight: 700; border: 1px solid currentColor; text-transform: capitalize; }
+.compat-badge.compat-confirmed { color: #a3be8c; background: color-mix(in srgb, #a3be8c 16%, transparent); }
+.compat-badge.compat-untested { color: #ebcb8b; background: color-mix(in srgb, #ebcb8b 16%, transparent); }
+.compat-badge.compat-known-incompatible { color: #bf616a; background: color-mix(in srgb, #bf616a 16%, transparent); }
+.compat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); gap: 0.5rem; margin: 0; }
+.compat-grid dt { color: var(--text-muted); font-size: 0.82rem; }
+.compat-grid dd { margin: 0.15rem 0 0; overflow-wrap: anywhere; }
+.compat-details summary { cursor: pointer; color: var(--text-muted); }
+.compat-details pre { margin-top: 0.5rem; }

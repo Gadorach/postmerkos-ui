@@ -100,16 +100,21 @@ function FirmwarePane({ client, connected, config, compatibility }) {
 	const [repositoryText, setRepositoryText] = useState('');
 	const [repositoryResult, setRepositoryResult] = useState(null);
 	const [error, setError] = useState('');
+	// configd is single-threaded; a slow upload starves the status poll and its
+	// timeouts surface as spurious "Request timed out" errors. Pause polling while
+	// an upload is in flight.
+	const uploadingRef = useRef(false);
 	useEffect(() => {
 		if (!connected) return undefined;
 		let stopped = false;
 		const poll = async () => {
+			if (uploadingRef.current) return;
 			try {
 				const [nextStatus, nextRepositories] = await Promise.all([
 					client.request('firmware_status'), client.request('firmware_repo_get'),
 				]);
-				if (!stopped) { setStatus(nextStatus.data); setRepositories(nextRepositories.data); setRepositoryText(previous => previous || JSON.stringify(nextRepositories.data, null, 2)); }
-			} catch (failure) { if (!stopped) setError(failure.message); }
+				if (!stopped && !uploadingRef.current) { setStatus(nextStatus.data); setRepositories(nextRepositories.data); setRepositoryText(previous => previous || JSON.stringify(nextRepositories.data, null, 2)); }
+			} catch (failure) { if (!stopped && !uploadingRef.current) setError(failure.message); }
 		};
 		poll(); const timer = setInterval(poll, 1500);
 		return () => { stopped = true; clearInterval(timer); };
@@ -128,11 +133,12 @@ function FirmwarePane({ client, connected, config, compatibility }) {
 			} catch (failure) { setError(`Backup could not be prepared: ${failure.message}`); return; }
 		} else if (!globalThis.confirm('Continue without an external configuration backup?')) return;
 		setUpload({ phase: 'starting', progress: 0 });
+		uploadingRef.current = true;
 		try {
 			const response = await client.uploadFirmware(file, { manifestFile, overlay, force, acceptUntested, onProgress: setUpload });
 			setReady(response.data);
 		} catch (failure) { setError(failure.message); }
-		finally { setUpload(null); }
+		finally { uploadingRef.current = false; setUpload(null); }
 	};
 	const begin = async () => {
 		if (!ready?.token || !globalThis.confirm('Begin flashing now? Management connections will close and the switch will reboot.')) return;
@@ -273,6 +279,48 @@ function SshKeysPane({ client, canManage }) {
 		<p className="ssh-hint">Public keys that authorize SSH login as root. Password login can be disabled separately under Services.</p>
 		<div className="ssh-key-list">{keys.length === 0 && <div className="ssh-empty">No keys configured.</div>}{keys.map(k => <div className="ssh-key-row" key={k.key}><div className="ssh-key-main"><strong>{k.label || (k.key.split(/\s+/)[2] ?? k.key.split(/\s+/)[0])}</strong><code>{prints[k.key] || k.key.split(/\s+/)[0]}</code></div><button className="btn-danger" onClick={() => remove(k.key)}><TrashIcon /> Remove</button></div>)}</div></section>
 		<section><form onSubmit={add}><h3>Add key</h3><label>Label (optional)<input value={label} onInput={event => setLabel(event.currentTarget.value)} /></label><label>Public key<textarea rows="3" value={material} placeholder="ssh-ed25519 AAAA... user@host" onInput={event => setMaterial(event.currentTarget.value)} /></label><button className="btn-primary" disabled={!material.trim()}><PlusIcon /> Add key</button></form></section>
+		{notice && <div className="notice">{notice}</div>}{error && <div className="error">{error}</div>}</div>;
+}
+
+async function sshFingerprint(key) {
+	try {
+		const blob = key.trim().split(/\s+/)[1];
+		if (!blob) return '';
+		const bytes = Uint8Array.from(atob(blob), c => c.charCodeAt(0));
+		const digest = await crypto.subtle.digest('SHA-256', bytes);
+		const b64 = btoa(String.fromCharCode(...new Uint8Array(digest))).replace(/=+$/, '');
+		return `SHA256:${b64}`;
+	} catch (failure) { return ''; }
+}
+
+function SshKeysPane({ client, canManage }) {
+	const [keys, setKeys] = useState([]);
+	const [prints, setPrints] = useState({});
+	const [label, setLabel] = useState('');
+	const [material, setMaterial] = useState('');
+	const [notice, setNotice] = useState(''); const [error, setError] = useState('');
+	const load = async data => {
+		const list = data ?? (await client.request('ssh_key_list')).data?.keys ?? [];
+		setKeys(list);
+		const entries = await Promise.all(list.map(async k => [k.key, await sshFingerprint(k.key)]));
+		setPrints(Object.fromEntries(entries));
+	};
+	useEffect(() => { if (canManage) load().catch(failure => setError(failure.message)); }, [canManage]);
+	const add = async event => {
+		event.preventDefault(); setError('');
+		try { const response = await client.request('ssh_key_add', { label, key: material.trim() }); await load(response.data?.keys); setLabel(''); setMaterial(''); setNotice('Key added.'); }
+		catch (failure) { setError(failure.message); }
+	};
+	const remove = async key => {
+		if (!globalThis.confirm('Remove this SSH key?')) return; setError('');
+		try { const response = await client.request('ssh_key_remove', { key }); await load(response.data?.keys); setNotice('Key removed.'); }
+		catch (failure) { setError(failure.message); }
+	};
+	if (!canManage) return null;
+	return <div className="tab-pane"><h3>SSH keys (root)</h3>
+		<p className="ssh-hint">Public keys that authorize SSH login as root. Password login can be disabled separately under Services.</p>
+		<div className="ssh-key-list">{keys.length === 0 && <div className="ssh-empty">No keys configured.</div>}{keys.map(k => <div className="ssh-key-row" key={k.key}><div className="ssh-key-main"><strong>{k.label || (k.key.split(/\s+/)[2] ?? k.key.split(/\s+/)[0])}</strong><code>{prints[k.key] || k.key.split(/\s+/)[0]}</code></div><button onClick={() => remove(k.key)}>Remove</button></div>)}</div>
+		<form onSubmit={add}><h3>Add key</h3><label>Label (optional)<input value={label} onInput={event => setLabel(event.currentTarget.value)} /></label><label>Public key<textarea rows="3" value={material} placeholder="ssh-ed25519 AAAA... user@host" onInput={event => setMaterial(event.currentTarget.value)} /></label><button disabled={!material.trim()}>Add Key</button></form>
 		{notice && <div className="notice">{notice}</div>}{error && <div className="error">{error}</div>}</div>;
 }
 

@@ -34,7 +34,8 @@ export class ConfigdClient {
 		this.#rejectPending(new Error('Connection closed'));
 	}
 
-	authenticate(username, password) { return this.request('auth', { username, password }); }
+	authenticate(username, password, remember) { return this.request('auth', { username, password, remember: !!remember }); }
+	resume(token) { return this.request('auth_token', { token }); }
 
 	subscribe(type, callback) {
 		if (!this.listeners.has(type)) this.listeners.set(type, new Set());

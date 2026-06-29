@@ -14,11 +14,13 @@ Open the development URL printed by Vite. The default development server provide
 Before submitting:
 
 ```sh
+npm run docs:check
 npm run lint
+npm test
 npm run build
 ```
 
-Backend protocol changes must remain compatible with the optional-web configd build and should update the module documentation.
+Backend protocol changes must remain compatible with the optional-web configd build and must update the relevant user, backend-contract, and module documentation. Follow [`DOCUMENTATION-RULES.md`](DOCUMENTATION-RULES.md).
 
 ## Releases
 

@@ -1,11 +1,20 @@
 # Changelog
 
+## [2026.06.29-docs] - 2026-06-29
+
+### Changed
+
+- Made `docs/README.md` the current interface documentation database.
+- Reduced the root README to development onboarding and documentation links.
+- Added current user guides for responsive/mobile behavior, System Information, time, firmware upload, and backup/restore.
+- Added repository documentation rules and an automated documentation check.
+
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [2026.06.29] - 2026-06-29
 
 ### Added
 

@@ -523,5 +523,165 @@
       "last_error": null
     }
   },
-  "errors": []
+  "errors": [],
+  "release": {
+    "version": "20260629-dev",
+    "build_id": "mock",
+    "build_time_utc": "2026-06-29T11:00:00Z",
+    "git_revision": "mock-responsive-ui",
+    "target_family": "vcore3",
+    "image_format": 2,
+    "config_schema": 3,
+    "web_api": 2,
+    "fwupdate_api": 2
+  },
+  "time": {
+    "local": "2026-06-29T08:30:00",
+    "utc": "2026-06-29T11:30:00Z"
+  },
+  "system": {
+    "identity": {
+      "serial_number": "Q2D-MOCK-24",
+      "product_number": "MS220-24P",
+      "base_mac": "00:18:0a:12:34:56",
+      "exact_model": "MS220-24P",
+      "hostname": "postmerkos-dev"
+    },
+    "processor": {
+      "model": "MIPS 24Kc V0.0",
+      "system_type": "Vitesse VCore-III Jaguar1",
+      "logical_processors": 1,
+      "bogomips": 416.15,
+      "revision": "00",
+      "ases": "mips16 dsp"
+    },
+    "kernel": {
+      "system": "Linux",
+      "node": "postmerkos-dev",
+      "release": "3.18.123",
+      "version": "#1 PREEMPT development",
+      "architecture": "mips",
+      "command_line": "console=ttyS0,115200 mem=134152192 root=/dev/mtdblock3"
+    },
+    "runtime": {
+      "uptime_seconds": 345678,
+      "boot_time_epoch": 1782370122,
+      "load_1": 0.08,
+      "load_5": 0.12,
+      "load_15": 0.09,
+      "running_processes": 1,
+      "scheduled_processes": 48,
+      "process_count": 47
+    },
+    "memory": {
+      "total_bytes": 134217728,
+      "available_bytes": 78315520,
+      "free_bytes": 48758784,
+      "buffers_bytes": 2097152,
+      "cached_bytes": 25165824,
+      "slab_bytes": 7340032,
+      "swap_total_bytes": 0,
+      "swap_free_bytes": 0
+    },
+    "storage": {
+      "root": {
+        "available": true,
+        "path": "/",
+        "type": "squashfs",
+        "source": "/dev/mtdblock3",
+        "total_bytes": 8388608,
+        "used_bytes": 6815744,
+        "free_bytes": 1572864,
+        "available_bytes": 1572864,
+        "used_percent": 81.25
+      },
+      "overlay": {
+        "available": true,
+        "path": "/overlay",
+        "type": "jffs2",
+        "source": "/dev/mtdblock4",
+        "total_bytes": 5242880,
+        "used_bytes": 1572864,
+        "free_bytes": 3670016,
+        "available_bytes": 3670016,
+        "used_percent": 30.0
+      },
+      "configuration": {
+        "available": true,
+        "path": "/config",
+        "type": "jffs2",
+        "source": "/dev/mtdblock4",
+        "total_bytes": 5242880,
+        "used_bytes": 1572864,
+        "free_bytes": 3670016,
+        "available_bytes": 3670016,
+        "used_percent": 30.0
+      },
+      "temporary": {
+        "available": true,
+        "path": "/tmp",
+        "type": "tmpfs",
+        "source": "tmpfs",
+        "total_bytes": 67108864,
+        "used_bytes": 4194304,
+        "free_bytes": 62914560,
+        "available_bytes": 62914560,
+        "used_percent": 6.25
+      }
+    },
+    "flash": {
+      "total_bytes": 16777216,
+      "partitions": [
+        {
+          "device": "mtd0",
+          "name": "RedBoot",
+          "size_bytes": 262144,
+          "erase_size_bytes": 65536
+        },
+        {
+          "device": "mtd1",
+          "name": "kernel",
+          "size_bytes": 2883584,
+          "erase_size_bytes": 65536
+        },
+        {
+          "device": "mtd3",
+          "name": "rootfs",
+          "size_bytes": 8388608,
+          "erase_size_bytes": 65536
+        },
+        {
+          "device": "mtd4",
+          "name": "jffs2",
+          "size_bytes": 5242880,
+          "erase_size_bytes": 65536
+        }
+      ]
+    }
+  },
+  "services": {
+    "ssh": {
+      "enabled": true,
+      "autostart": true,
+      "desired_running": true,
+      "running": true,
+      "in_sync": true,
+      "password_auth": true,
+      "port": 22
+    },
+    "web": {
+      "enabled": true,
+      "autostart": true,
+      "desired_running": true,
+      "running": true,
+      "in_sync": true
+    },
+    "chrony": {
+      "enabled": true,
+      "autostart": true,
+      "desired_running": true,
+      "running": true,
+      "in_sync": true
+    }
+  }
 }

@@ -1,13 +1,11 @@
 # API module
 
-`src/api.js` implements `ConfigdClient`, a transport-neutral client model around the configd WebSocket protocol.
-
-## Inputs
+`src/api.js` implements `ConfigdClient`, the reconnecting client for the configd WebSocket protocol.
 
 ```js
 new ConfigdClient({ url, onStatus, onConfig, onConnection, onError })
 ```
 
-`request(type, data)` adds a unique string ID and returns a promise resolved by the matching response. Requests time out after ten seconds. Pending promises are rejected on disconnect.
+`request(type, data)` assigns a unique string ID and resolves only from the matching response. Requests have a bounded timeout and all pending promises are rejected on disconnect. Malformed server JSON is reported without breaking reconnect. Correlated `error` responses reject the originating request; uncorrelated errors are forwarded to `onError`.
 
-Malformed server JSON is reported without breaking the reconnect loop. `error` responses reject only the matching request; uncorrelated errors are passed to `onError`.
+Connection state distinguishes transport, protocol handshake, authentication, and role. The client uses `configd-ws`, validates protocol `hello`, supports password and token authentication, and does not expose privileged operations until the server returns capabilities.

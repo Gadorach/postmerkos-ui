@@ -1238,3 +1238,189 @@ th.sortable:hover {
 .hardware-inhibited, .hardware-unavailable, .hardware-disabled { color: var(--text-muted); }
 .hardware-ready { color: #a3be8c; }
 .reset-countdown-warning { font-weight: 700; }
+
+/* --- Responsive management layout and front-panel bank wrapping --- */
+.management-dialog.dialog-standard { width: min(60rem, calc(100vw - 2rem)); }
+.management-dialog.dialog-wide { width: min(78rem, calc(100vw - 2rem)); }
+.management-dialog.dialog-extra-wide,
+.management-dialog.port-editor-dialog { width: min(96rem, calc(100vw - 2rem)); }
+.management-dialog .tool-dialog { width: 100%; max-width: none; box-sizing: border-box; }
+.dialog-body > .tab-pane,
+.dialog-body > .tab-stack,
+.dialog-body > .network-panel {
+	width: min(100%, 56rem);
+	margin-inline: auto;
+	box-sizing: border-box;
+}
+.dialog-body > .terminal-pane { width: min(100%, 74rem); }
+.dialog-body > .all-ports-pane { width: 100%; max-width: 92rem; }
+.tab-stack { display: grid; gap: 0.85rem; }
+.tab-stack > .tab-pane { width: 100%; min-height: 0; }
+.service-pane fieldset,
+.time-pane details,
+.advanced-settings { margin-block: 0.75rem; }
+.storage-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: 0.7rem; }
+.storage-card { display: grid; align-content: start; gap: 0.35rem; min-width: 0; padding: 0.7rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); }
+.storage-card h4 { margin: 0; color: var(--text-bright); }
+.storage-card span,
+.storage-card small { color: var(--text-muted); overflow-wrap: anywhere; }
+.compact-table-wrap { max-width: 100%; overflow-x: auto; }
+.compact-table { width: 100%; border-collapse: collapse; }
+.compact-table th,
+.compact-table td { padding: 0.4rem 0.55rem; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
+.long-value { display: block; overflow-wrap: anywhere; white-space: normal; }
+
+.ports-container {
+	width: 100%;
+	container: front-ports / inline-size;
+	box-sizing: border-box;
+}
+.ports-layout {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-end;
+	justify-content: center;
+	gap: 0.8rem;
+	width: 100%;
+	max-width: 100%;
+	margin: 0;
+	padding: 0.55rem;
+	box-sizing: border-box;
+	overflow: visible;
+}
+.port-bank {
+	--tile-size: 3rem;
+	--tile-gap: 2px;
+	flex: 0 0 calc((6 * var(--tile-size)) + (5 * var(--tile-gap)));
+	width: calc((6 * var(--tile-size)) + (5 * var(--tile-gap)));
+	display: grid;
+	place-items: end center;
+}
+.port-bank-grid {
+	display: grid;
+	grid-template-rows: repeat(2, var(--tile-size));
+	grid-auto-flow: column;
+	grid-auto-columns: var(--tile-size);
+	justify-content: center;
+	gap: var(--tile-gap);
+	width: 100%;
+}
+.port-bank .port { box-sizing: border-box; }
+.sfp-bank .port {
+	width: 2.4rem;
+	height: var(--tile-size);
+	justify-self: center;
+	border-radius: 3px;
+	font-size: 0.8em;
+	border-style: dashed;
+}
+
+/* The final header row overlaps by one physical pixel so content cannot show
+   through between the two sticky header bands while the main table scrolls. */
+.front-panel-view .port-table thead tr:first-child th {
+	top: var(--panel-offset, 0px);
+}
+.front-panel-view .port-table thead tr:last-child th {
+	top: calc(var(--panel-offset, 0px) + var(--table-group-header-height, 2.4rem) - 1px);
+	border-top-width: 0;
+}
+
+@container front-ports (max-width: 20rem) {
+	.port-bank {
+		flex-basis: calc((2 * var(--tile-size)) + var(--tile-gap));
+		width: calc((2 * var(--tile-size)) + var(--tile-gap));
+	}
+	.port-bank-grid {
+		grid-template-columns: repeat(2, var(--tile-size));
+		grid-template-rows: none;
+		grid-auto-flow: row;
+		grid-auto-columns: unset;
+		width: auto;
+	}
+}
+
+@media (max-width: 720px) {
+	body { min-width: 0; }
+	#heading { padding: 0.65rem; }
+	.heading-bar { align-items: stretch; gap: 0.55rem; }
+	.brand { justify-content: space-between; }
+	.device-summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: 100%; gap: 0.35rem; }
+	.device-summary .ds-item { min-width: 0; overflow-wrap: anywhere; }
+	.device-summary .conn-pill { margin-left: 0; }
+	.heading-actions { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.35rem; }
+	.heading-actions .toolbar-button,
+	.heading-actions .toolbar-button.icon-button { width: 100%; min-width: 0; min-height: 2.85rem; }
+
+	.management-dialog,
+	.management-dialog.dialog-standard,
+	.management-dialog.dialog-wide,
+	.management-dialog.dialog-extra-wide,
+	.management-dialog.port-editor-dialog,
+	.compatibility-dialog {
+		width: calc(100vw - 0.5rem);
+		max-width: none;
+		max-height: calc(100dvh - 0.5rem);
+		margin: 0.25rem auto;
+		border-radius: 8px;
+	}
+	.management-dialog .tool-dialog { max-height: calc(100dvh - 0.5rem); }
+	.dialog-topbar { padding: 0.7rem 0.75rem 0; }
+	.dialog-body { padding: 0.75rem; }
+	.dialog-heading { margin-bottom: 0.55rem; }
+	.dialog-heading h2 { font-size: 1.15rem; }
+	.dialog-tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.3rem; padding-bottom: 0.65rem; }
+	.dialog-tabs button { justify-content: flex-start; min-width: 0; min-height: 2.7rem; padding-inline: 0.55rem; }
+	.tab-pane { min-height: 0; }
+	.tab-pane > section,
+	.system-card,
+	.clone-pane,
+	.tab-pane fieldset { padding: 0.7rem; }
+	.form-grid,
+	.system-grid,
+	.storage-grid,
+	.network-grid,
+	.network-runtime,
+	.compat-grid { grid-template-columns: 1fr; }
+	.account-row { grid-template-columns: 1fr; }
+	.account-row button,
+	.button-row button,
+	.pane-footer-actions button { width: 100%; }
+	.button-row,
+	.pane-footer,
+	.pane-footer-actions { display: grid; grid-template-columns: 1fr; width: 100%; }
+	.pane-footer { position: static; margin: 0.75rem 0 0; padding: 0.75rem 0 0; }
+	.pane-footer-actions { margin-left: 0; }
+	.terminal-input { grid-template-columns: auto 1fr !important; }
+	.terminal-input button { grid-column: 1 / -1; width: 100%; }
+	.terminal-output { min-height: 12rem; max-height: 42dvh; }
+	.filter-bar { width: 100%; box-sizing: border-box; gap: 0.5rem; }
+	.filter-bar label { width: 100%; justify-content: space-between; }
+	.filter-bar select { max-width: 60%; }
+	.front-panel-view { padding: 0.5rem; }
+	.front-panel-view .ports-container { position: static; box-shadow: none; }
+	.front-panel-view .port-table thead tr:first-child th,
+	.front-panel-view .port-table thead tr:last-child th { top: 0; }
+	.front-panel-view .table-scroll { overflow-x: auto; }
+	.all-ports-pane { max-height: none; overflow: visible; }
+	.all-ports-pane .table-scroll { max-height: 55dvh; }
+	.ssh-key-row { align-items: stretch; flex-direction: column; }
+	.ssh-key-row button { width: 100%; }
+	.toast-stack { top: auto; bottom: 0.75rem; }
+}
+
+@media (max-width: 430px) {
+	.device-summary { grid-template-columns: 1fr; }
+	.heading-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+	.dialog-tabs { grid-template-columns: 1fr; }
+	.port-bank {
+		flex-basis: calc((2 * var(--tile-size)) + var(--tile-gap));
+		width: calc((2 * var(--tile-size)) + var(--tile-gap));
+	}
+	.port-bank-grid {
+		grid-template-columns: repeat(2, var(--tile-size));
+		grid-template-rows: none;
+		grid-auto-flow: row;
+		grid-auto-columns: unset;
+		width: auto;
+	}
+}

@@ -95,12 +95,21 @@ function App() {
 	useEffect(() => { if (!hasDiff) return undefined; const warn = event => { event.preventDefault(); event.returnValue = ''; }; globalThis.addEventListener('beforeunload', warn); return () => globalThis.removeEventListener('beforeunload', warn); }, [hasDiff]);
 	useEffect(() => {
 		const panel = document.querySelector('.front-panel-view .ports-container');
+		const firstHeaderRow = document.querySelector('.front-panel-view .port-table thead tr:first-child');
 		if (!panel) return undefined;
-		const apply = () => document.documentElement.style.setProperty('--panel-offset', `${panel.offsetHeight}px`);
+		const apply = () => {
+			document.documentElement.style.setProperty('--panel-offset', `${panel.getBoundingClientRect().height}px`);
+			if (firstHeaderRow) document.documentElement.style.setProperty('--table-group-header-height', `${firstHeaderRow.getBoundingClientRect().height}px`);
+		};
 		apply();
 		const observer = new ResizeObserver(apply);
 		observer.observe(panel);
-		return () => observer.disconnect();
+		if (firstHeaderRow) observer.observe(firstHeaderRow);
+		globalThis.addEventListener('resize', apply);
+		return () => {
+			observer.disconnect();
+			globalThis.removeEventListener('resize', apply);
+		};
 	}, [config, frontTable]);
 	useEffect(() => { if (!error) return undefined; const timer = setTimeout(() => setError(null), 6000); return () => clearTimeout(timer); }, [error]);
 	useEffect(() => { if (!notice) return undefined; const timer = setTimeout(() => setNotice(null), 6000); return () => clearTimeout(timer); }, [notice]);

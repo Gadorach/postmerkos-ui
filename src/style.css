@@ -1231,3 +1231,10 @@ th.sortable:hover {
 .compat-grid dd { margin: 0.15rem 0 0; overflow-wrap: anywhere; }
 .compat-details summary { cursor: pointer; color: var(--text-muted); }
 .compat-details pre { margin-top: 0.5rem; }
+
+/* Hardware reset/status indication */
+.hardware-state { text-transform: capitalize; }
+.hardware-countdown, .hardware-triggered { color: #ebcb8b; font-weight: 700; }
+.hardware-inhibited, .hardware-unavailable, .hardware-disabled { color: var(--text-muted); }
+.hardware-ready { color: #a3be8c; }
+.reset-countdown-warning { font-weight: 700; }

@@ -126,7 +126,7 @@ export function FirmwareTool({ client, connected, config, compatibility = 'untes
 			{repositories && <details><summary>Firmware repositories</summary><pre>{JSON.stringify(repositories, null, 2)}</pre></details>}
 			{status && <div className="firmware-status"><strong>{status.state} / {status.stage}</strong><progress max="100" value={status.progress ?? 0} /><span>{status.progress ?? 0}% — {status.message}</span></div>}
 			{error && <div className="error">{error}</div>}
-			<p className="warning">When flashing begins, management connections will close. Controllable copper/PoE LEDs show approximate progress when supported; serial status and the post-reboot update log remain available.</p>
+			<p className="warning">When flashing begins, management connections will close. On hardware-verified models, the chassis status LED alternates green and orange faster as progress advances, pulses orange on failure or rollback, and remains green after verification. Port LEDs are used only as a fallback; serial status and the post-reboot update log remain available.</p>
 		</div>}
 	</DialogButton>;
 }

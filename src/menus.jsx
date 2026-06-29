@@ -201,7 +201,7 @@ function FirmwarePane({ client, connected, config, compatibility }) {
 		{ready && <div className="notice"><strong>Firmware validated and ready</strong><p>{ready.message}</p><div className="button-row"><button className="btn-primary" onClick={begin}><CheckIcon /> Begin update</button><button className="btn-secondary" onClick={() => { client.request('firmware_upload_cancel').catch(() => {}); setReady(null); }}>Cancel</button></div></div>}
 		{status && <div className="firmware-status"><strong>{status.state} / {status.stage}</strong><progress max="100" value={status.progress ?? 0} /><span>{status.progress ?? 0}% — {status.message}</span></div>}
 		<details><summary>Repository configuration</summary><p>Configure HTTP/HTTPS firmware sources. The first source is used by Check Repository.</p><textarea className="json-editor" rows="10" value={repositoryText || JSON.stringify(repositories, null, 2)} onInput={event => setRepositoryText(event.currentTarget.value)} /><div className="button-row"><button className="btn-primary" onClick={saveRepositories}><CheckIcon /> Save</button><button className="btn-secondary" onClick={checkRepository}><RefreshIcon /> Check</button></div>{repositoryResult && <pre>{repositoryResult.output ?? repositoryResult.message ?? JSON.stringify(repositoryResult, null, 2)}</pre>}</details>
-		<p className="warning">When flashing begins, the interface will disconnect. Controllable port/PoE LEDs show approximate progress where supported. Serial output and the post-reboot update log remain available.</p>
+		<p className="warning">When flashing begins, the interface will disconnect. On hardware-verified models, the chassis status LED alternates green and orange faster as progress advances, pulses orange on failure or rollback, and remains green after verification. Port LEDs are used only as a fallback. Serial output and the post-reboot update log remain available.</p>
 		{error && <div className="error">{error}</div>}
 	</div>;
 }
@@ -335,8 +335,38 @@ function SystemPane({ client, status }) {
 	};
 	const submit = () => { if (report) globalThis.open(buildIssueUrl(report), '_blank', 'noopener'); };
 	const poe = report && (report.poe_supported ? (report.poe_available ? 'available' : 'supported') : 'not supported');
+	const reset = status.hardware_policy?.reset_button;
+	const resetState = reset?.state ?? 'unavailable';
+	const resetLabel = resetState === 'countdown'
+		? `countdown ${reset?.progress ?? 0}%`
+		: resetState.replace(/-/g, ' ');
+	const ledOwner = status.hardware_policy?.led_owner ?? 'normal';
+	const statusLed = status.hardware_policy?.status_led;
+	const greenGpio = statusLed?.green?.gpio;
+	const orangeGpio = statusLed?.orange?.gpio;
+	const hasKnownStatusGpios = Number.isInteger(greenGpio) && greenGpio >= 0
+		&& Number.isInteger(orangeGpio) && orangeGpio >= 0;
+	const statusLedLabel = statusLed?.verified && hasKnownStatusGpios
+		? `GPIO${greenGpio} green · GPIO${orangeGpio} orange`
+		: statusLed?.verified
+			? `${statusLed.backend ?? 'verified handler'} · ${statusLed.protocol ?? 'verified protocol'}`
+			: 'not hardware verified for this model';
 	return <div className="tab-pane">
 		<section><h3>System information</h3><dl className="system-grid"><div><dt>Model</dt><dd>{status.device}</dd></div><div><dt>Firmware</dt><dd>{status.release?.version ?? 'unknown'}</dd></div><div><dt>Compatibility</dt><dd>{status.capabilities?.compatibility}</dd></div><div><dt>Ports</dt><dd>{status.capabilities?.port_count}</dd></div><div><dt>Local time</dt><dd>{status.time?.local}</dd></div><div><dt>UTC</dt><dd>{status.time?.utc}</dd></div></dl></section>
+		<section><h3>Physical controls</h3>
+			<dl className="system-grid">
+				<div><dt>Reset button</dt><dd className={`hardware-state hardware-${resetState}`}>{resetLabel}</dd></div>
+				<div><dt>Input</dt><dd>{reset?.available ? `GPIO${reset.gpio} · ${reset.active_low ? 'active low' : 'active high'}` : 'not available'}</dd></div>
+				<div><dt>Safety</dt><dd>{reset?.verified && reset?.destructive_enabled ? 'hardware verified' : 'destructive action disabled'}</dd></div>
+				<div><dt>Factory reset</dt><dd>{reset?.enabled ? `hold ${reset.hold_seconds ?? 10} seconds` : 'disabled by policy'}</dd></div>
+				<div><dt>Status LED owner</dt><dd>{ledOwner}</dd></div>
+				<div><dt>Status LED</dt><dd>{statusLed?.available ? 'available' : statusLed?.verified ? 'verified but unavailable' : 'not available'}</dd></div>
+				<div><dt>Status LED evidence</dt><dd>{statusLedLabel}</dd></div>
+			</dl>
+			{resetState === 'countdown' && <p className="warning reset-countdown-warning">Release the reset button now to cancel the factory reset.</p>}
+			{resetState === 'inhibited' && <p className="notice">The physical reset button is temporarily blocked while a firmware operation owns the flash lock.</p>}
+			{resetState === 'waiting-release' && <p className="notice">Release the button once after boot before it can be armed. This prevents a stuck button from erasing settings.</p>}
+		</section>
 		<section><h3>Compatibility report</h3>
 			{error && <div className="error">{error}</div>}
 			{report && <div className="compat-card">

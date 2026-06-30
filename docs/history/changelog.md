@@ -105,3 +105,9 @@ A reduction in final zip size from `250 KB` to `72.2 KB`.
 ### Changed
 
 - Grey-out rows of ports which aren't established
+
+## 2026-06-30 reset-state visibility
+
+- Added a lightweight 500 ms reset-button status request.
+- Displayed debounced Pressed/Released, arming, countdown LED availability, and last event.
+- Added the persistent-overlay recovery warning.

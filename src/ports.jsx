@@ -2,10 +2,13 @@ import './style.css';
 import Port from './port';
 import { mergePortState } from './port-state';
 import { splitPortBanks } from './port-layout';
+import { useResponsiveMode } from './responsive';
 
 export default function Ports({ config, status, poe, selectedPort, onSelectPort }) {
 	const ports = config.ports;
 	const keys = Object.keys(ports).map(Number).sort((a, b) => a - b);
+	const { phone } = useResponsiveMode();
+	const capabilities = status?.capabilities ?? {};
 
 	const makePort = number => {
 		const port = String(number);
@@ -14,16 +17,17 @@ export default function Ports({ config, status, poe, selectedPort, onSelectPort 
 			poe={poe} selected={String(selectedPort) === port} onSelect={onSelectPort} />;
 	};
 
-	const { ethernetBanks, sfpPorts } = splitPortBanks(keys);
-
-	return <div className="ports-container">
+	const { copperBanks, uplinkPairs, uplinkLabel } = splitPortBanks(keys, capabilities, phone);
+	return <div className={`ports-container${phone ? ' phone-ports' : ''}`}>
 		<div className="ports-layout" aria-label="Switch front-panel ports">
-			{ethernetBanks.map((bank, index) => <div className="port-bank ethernet-bank" key={`ethernet-${index + 1}`}>
-				<div className="port-bank-grid">{bank.map(makePort)}</div>
-			</div>)}
-			{sfpPorts.length > 0 && <div className="port-bank sfp-bank">
-				<div className="port-bank-grid">{sfpPorts.map(makePort)}</div>
-			</div>}
+			{copperBanks.map(bank => <fieldset className="port-bank copper-bank" key={bank.label}>
+				<legend>{bank.label}</legend>
+				<div className="port-bank-grid">{bank.ports.map(makePort)}</div>
+			</fieldset>)}
+			{uplinkPairs.length > 0 && <fieldset className="port-bank sfp-bank">
+				<legend>{uplinkLabel}</legend>
+				<div className="sfp-pairs">{uplinkPairs.map((pair, index) => <div className="sfp-pair" key={`sfp-${index}`}>{pair.map(makePort)}</div>)}</div>
+			</fieldset>}
 		</div>
 	</div>;
 }

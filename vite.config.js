@@ -4,6 +4,7 @@ import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { WebSocketServer } from 'ws';
 import { createConnection } from 'net';
+import { TIMEZONE_GROUPS } from './src/timezones.js';
 
 function wsPlugin() {
 	const host = process.env.SWITCH_HOST;
@@ -31,7 +32,10 @@ function wsPlugin() {
 					const statusData = JSON.parse(readFileSync(resolve('src/test/24/status'), 'utf-8'));
 					let authenticated = false;
 					let upload = null;
-					let servicePolicy = { ssh: { enabled: true, autostart: true, password_auth: true, port: 22 }, web: { enabled: true, autostart: true }, chrony: { enabled: true, autostart: true } };
+					let servicePolicy = { ssh: { enabled: true, autostart: true, password_auth: true, port: 22 }, web: { enabled: true, autostart: true }, chrony: { enabled: true, autostart: true }, mdns: { enabled: true, autostart: true } };
+					let identityPolicy = { hostname: 'postmerkos' };
+					const timezoneGroups = TIMEZONE_GROUPS;
+					const identityData = () => ({ configured_hostname: identityPolicy.hostname, effective_hostname: identityPolicy.hostname, advertised_name: `${identityPolicy.hostname}.local`, mdns_management_only: true, dhcp_hostname_registration_supported: false, conflict_state: 'none', policy: identityPolicy });
 					let timePolicy = { timezone: 'America/Moncton', standard_offset_minutes: -240, dst: { enabled: true, offset_minutes: -180, start: { month: 3, week: 2, weekday: 0, hour: 2, minute: 0 }, end: { month: 11, week: 1, weekday: 0, hour: 2, minute: 0 } }, ntp_enabled: true, servers: ['pool.ntp.org'] };
 					const timeData = () => ({ utc: new Date().toISOString(), local: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString().replace(/Z$/, ''), offset_minutes: -180, dst_active: true, policy: timePolicy });
 					const send = (type, data, id) => ws.send(JSON.stringify({ ...(id != null ? { id } : {}), type, data }));
@@ -66,6 +70,9 @@ function wsPlugin() {
 						else if (msg.type === 'password_change') send('ack', { message: 'Development mock password updated' }, msg.id);
 						else if (msg.type === 'user_list') send('users', { users: [{ username: 'root', role: 'admin' }, { username: 'operator', role: 'operator' }] }, msg.id);
 						else if (msg.type === 'ssh_key_list') send('ssh_keys', { keys: [] }, msg.id);
+						else if (msg.type === 'system_identity_get') send('system_identity', identityData(), msg.id);
+						else if (msg.type === 'system_identity_set') { identityPolicy = { ...identityPolicy, ...msg.data, hostname: String(msg.data?.hostname ?? identityPolicy.hostname).toLowerCase() }; statusData.identity = identityData(); send('ack', { message: 'System identity updated' }, msg.id); send('status', statusData); }
+						else if (msg.type === 'timezones_get') send('timezones', timezoneGroups, msg.id);
 						else if (msg.type === 'services_get') send('services', servicePolicy, msg.id);
 						else if (msg.type === 'services_set') { servicePolicy = msg.data; send('ack', { message: 'Service policy saved and applied' }, msg.id); }
 						else if (msg.type === 'time_get') send('time', timeData(), msg.id);

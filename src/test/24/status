@@ -45,7 +45,9 @@
         "available": true
       },
       "capabilities": {
-        "poe": true
+        "poe": true,
+        "media": "copper",
+        "max_speed_mbps": 1000
       }
     },
     "2": {
@@ -62,7 +64,9 @@
         "available": true
       },
       "capabilities": {
-        "poe": true
+        "poe": true,
+        "media": "copper",
+        "max_speed_mbps": 1000
       }
     },
     "3": {
@@ -79,7 +83,9 @@
         "available": true
       },
       "capabilities": {
-        "poe": true
+        "poe": true,
+        "media": "copper",
+        "max_speed_mbps": 1000
       }
     },
     "4": {
@@ -96,7 +102,9 @@
         "available": true
       },
       "capabilities": {
-        "poe": true
+        "poe": true,
+        "media": "copper",
+        "max_speed_mbps": 1000
       }
     },
     "5": {
@@ -113,7 +121,9 @@
         "available": true
       },
       "capabilities": {
-        "poe": true
+        "poe": true,
+        "media": "copper",
+        "max_speed_mbps": 1000
       }
     },
     "6": {
@@ -130,7 +140,9 @@
         "available": true
       },
       "capabilities": {
-        "poe": true
+        "poe": true,
+        "media": "copper",
+        "max_speed_mbps": 1000
       }
     },
     "7": {
@@ -147,7 +159,9 @@
         "available": true
       },
       "capabilities": {
-        "poe": true
+        "poe": true,
+        "media": "copper",
+        "max_speed_mbps": 1000
       }
     },
     "8": {
@@ -164,7 +178,9 @@
         "available": true
       },
       "capabilities": {
-        "poe": true
+        "poe": true,
+        "media": "copper",
+        "max_speed_mbps": 1000
       }
     },
     "9": {
@@ -181,7 +197,9 @@
         "available": true
       },
       "capabilities": {
-        "poe": true
+        "poe": true,
+        "media": "copper",
+        "max_speed_mbps": 1000
       }
     },
     "10": {
@@ -198,7 +216,9 @@
         "available": true
       },
       "capabilities": {
-        "poe": true
+        "poe": true,
+        "media": "copper",
+        "max_speed_mbps": 1000
       }
     },
     "11": {
@@ -215,7 +235,9 @@
         "available": true
       },
       "capabilities": {
-        "poe": true
+        "poe": true,
+        "media": "copper",
+        "max_speed_mbps": 1000
       }
     },
     "12": {
@@ -232,7 +254,9 @@
         "available": true
       },
       "capabilities": {
-        "poe": true
+        "poe": true,
+        "media": "copper",
+        "max_speed_mbps": 1000
       }
     },
     "13": {
@@ -249,7 +273,9 @@
         "available": true
       },
       "capabilities": {
-        "poe": true
+        "poe": true,
+        "media": "copper",
+        "max_speed_mbps": 1000
       }
     },
     "14": {
@@ -266,7 +292,9 @@
         "available": true
       },
       "capabilities": {
-        "poe": true
+        "poe": true,
+        "media": "copper",
+        "max_speed_mbps": 1000
       }
     },
     "15": {
@@ -283,7 +311,9 @@
         "available": true
       },
       "capabilities": {
-        "poe": true
+        "poe": true,
+        "media": "copper",
+        "max_speed_mbps": 1000
       }
     },
     "16": {
@@ -300,7 +330,9 @@
         "available": true
       },
       "capabilities": {
-        "poe": true
+        "poe": true,
+        "media": "copper",
+        "max_speed_mbps": 1000
       }
     },
     "17": {
@@ -317,7 +349,9 @@
         "available": true
       },
       "capabilities": {
-        "poe": true
+        "poe": true,
+        "media": "copper",
+        "max_speed_mbps": 1000
       }
     },
     "18": {
@@ -334,7 +368,9 @@
         "available": true
       },
       "capabilities": {
-        "poe": true
+        "poe": true,
+        "media": "copper",
+        "max_speed_mbps": 1000
       }
     },
     "19": {
@@ -351,7 +387,9 @@
         "available": true
       },
       "capabilities": {
-        "poe": true
+        "poe": true,
+        "media": "copper",
+        "max_speed_mbps": 1000
       }
     },
     "20": {
@@ -368,7 +406,9 @@
         "available": true
       },
       "capabilities": {
-        "poe": true
+        "poe": true,
+        "media": "copper",
+        "max_speed_mbps": 1000
       }
     },
     "21": {
@@ -385,7 +425,9 @@
         "available": true
       },
       "capabilities": {
-        "poe": true
+        "poe": true,
+        "media": "copper",
+        "max_speed_mbps": 1000
       }
     },
     "22": {
@@ -402,7 +444,9 @@
         "available": true
       },
       "capabilities": {
-        "poe": true
+        "poe": true,
+        "media": "copper",
+        "max_speed_mbps": 1000
       }
     },
     "23": {
@@ -419,7 +463,9 @@
         "available": true
       },
       "capabilities": {
-        "poe": true
+        "poe": true,
+        "media": "copper",
+        "max_speed_mbps": 1000
       }
     },
     "24": {
@@ -436,7 +482,9 @@
         "available": true
       },
       "capabilities": {
-        "poe": true
+        "poe": true,
+        "media": "copper",
+        "max_speed_mbps": 1000
       }
     },
     "25": {
@@ -449,7 +497,9 @@
         "role": "disabled"
       },
       "capabilities": {
-        "poe": false
+        "poe": false,
+        "media": "sfp-plus",
+        "max_speed_mbps": 10000
       }
     },
     "26": {
@@ -462,7 +512,9 @@
         "role": "disabled"
       },
       "capabilities": {
-        "poe": false
+        "poe": false,
+        "media": "sfp-plus",
+        "max_speed_mbps": 10000
       }
     },
     "27": {
@@ -475,7 +527,9 @@
         "role": "disabled"
       },
       "capabilities": {
-        "poe": false
+        "poe": false,
+        "media": "sfp-plus",
+        "max_speed_mbps": 10000
       }
     },
     "28": {
@@ -488,12 +542,14 @@
         "role": "disabled"
       },
       "capabilities": {
-        "poe": false
+        "poe": false,
+        "media": "sfp-plus",
+        "max_speed_mbps": 10000
       }
     }
   },
   "capabilities": {
-    "port_count": 24,
+    "port_count": 28,
     "poe": {
       "supported": true,
       "available": true,
@@ -503,6 +559,14 @@
         "af",
         "at"
       ]
+    },
+    "copper_ports": 24,
+    "uplink_ports": 4,
+    "uplink": {
+      "media": "sfp-plus",
+      "label": "SFP+",
+      "max_speed_mbps": 10000,
+      "count": 4
     }
   },
   "network": {
@@ -682,6 +746,20 @@
       "desired_running": true,
       "running": true,
       "in_sync": true
+    },
+    "mdns": {
+      "enabled": true,
+      "autostart": true,
+      "running": true,
+      "in_sync": true
     }
+  },
+  "identity": {
+    "configured_hostname": "postmerkos",
+    "effective_hostname": "postmerkos",
+    "advertised_name": "postmerkos.local",
+    "mdns_management_only": true,
+    "dhcp_hostname_registration_supported": false,
+    "conflict_state": "none"
   }
 }

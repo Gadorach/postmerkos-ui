@@ -5,6 +5,7 @@ Active documents describe the current UI source. Historical releases and complet
 ## User interface
 
 - [Current interface behavior](user-guide/interface.md)
+- [Login and connection status](user-guide/login.md)
 - [Responsive and mobile layout](user-guide/responsive-mobile.md)
 - [System Information and time controls](user-guide/system-and-time.md)
 - [Firmware, backup, and recovery interactions](user-guide/updates-and-backups.md)

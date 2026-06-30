@@ -11,3 +11,5 @@ Firmware upload binary frames are permitted only inside an authenticated token-o
 Every request name used by the UI must appear in configd’s WebSocket dispatcher. The builder’s UI/configd contract test verifies this parity.
 
 The System panel polls `reset_button_status` every 500 ms while mounted. This lightweight response contains `reset_button` and `led_owner`; it deliberately avoids the expensive full inventory assembled by `get_status`. Press/release state is server-authoritative.
+
+Identity and timezone controls use `system_identity_get`, `system_identity_set`, and `timezones_get`. The target is authoritative for hostname validation, mDNS reconfiguration, timezone definitions, and capabilities. Browser-local display/session preferences are listed in the builder management-feature manifest and deliberately excluded from PMC parity.

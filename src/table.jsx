@@ -102,7 +102,7 @@ function FilterBar({ filters, onChange }) {
 
 const DEFAULT_FILTERS = { link: 'all', speed: 'all', poe: 'all', hasClients: false };
 
-export default function Table({ ports, status, poe, updatePort, updatePortMulti, diff, selectedPort }) {
+export default function Table({ ports, status, poe, updatePort, updatePortMulti, diff, selectedPort, onSelectPort, showName = false }) {
 	const [sections, setSections] = useState(() => {
 		const init = {};
 		SECTIONS.forEach(s => { init[s.key] = s.defaultExpanded; });
@@ -128,8 +128,8 @@ export default function Table({ ports, status, poe, updatePort, updatePortMulti,
 		return sort.direction === 'asc' ? ' ▴' : ' ▾';
 	};
 
-	const stickyHeaderSort = (col) => ({
-		className: `sticky-col ${col === 'port' ? 'sticky-col-1' : 'sticky-col-2'} sortable`,
+	const sortableHeader = (col, sticky = false) => ({
+		className: `${sticky ? 'sticky-col sticky-col-1 ' : ''}sortable`.trim(),
 		onClick: () => toggleSort(col),
 	});
 
@@ -210,10 +210,10 @@ export default function Table({ ports, status, poe, updatePort, updatePortMulti,
 			<table className="port-table">
 				<thead>
 					<tr>
-						<th rowSpan="2" {...stickyHeaderSort('port')}
+						<th rowSpan="2" {...sortableHeader('port', true)}
 							title="Sort by port number">port{sortIndicator('port')}</th>
-						<th rowSpan="2" {...stickyHeaderSort('name')}
-							title="Sort by port name">name{sortIndicator('name')}</th>
+						{showName && <th rowSpan="2" {...sortableHeader('name')}
+							title="Sort by port name">name{sortIndicator('name')}</th>}
 						{expandedSections.map(s => (
 							<th key={s.key}
 								colSpan={s.expanded ? s.cols.length : 1}
@@ -257,7 +257,7 @@ export default function Table({ ports, status, poe, updatePort, updatePortMulti,
 						let nativeValue = p.vlan?.untagged_vid || '';
 						let stpEnabled = p.stp?.enabled ?? false;
 						return (
-							<tr id={`port-row-${port}`} key={port} className={`${established ? '' : 'link-down'} ${String(selectedPort) === String(port) ? 'selected-port-row' : ''}`.trim()}>
+							<tr id={`port-row-${port}`} key={port} onClick={() => onSelectPort?.(String(port))} className={`${established ? '' : 'link-down'} ${String(selectedPort) === String(port) ? 'selected-port-row' : ''}`.trim()}>
 								<td className={`sticky-col sticky-col-1 ${diffStyle(port, 'enabled') ?? ''}`}>
 									<span className="toggle">
 										<button
@@ -267,13 +267,14 @@ export default function Table({ ports, status, poe, updatePort, updatePortMulti,
 									</span>
 								</td>
 
-								<td className={`sticky-col sticky-col-2 ${diffStyle(port, 'name') ?? ''}`}>
+								{showName && <td className={diffStyle(port, 'name') ?? ''}>
 									<input
 										type="text"
 										value={p.name}
+										onClick={event => event.stopPropagation()}
 										onChange={(e) => updatePort(port, 'name', e.target.value)}
 									/>
-								</td>
+								</td>}
 
 								{/* port section */}
 								{sections.port ? (<>

@@ -1,5 +1,18 @@
 # Changelog
 
+## [2026.06.30-responsive] - 2026-06-30
+
+### Added
+
+- Phone accordion port editor, six-port groups, SFP pair layout, All Ports cloning, hostname/mDNS controls, and canonical timezone loading.
+- Bounded accessible login/status layout and remembered-session preference.
+- Source-level contracts for approved responsive behavior.
+
+### Changed
+
+- Replaced the top display with eight responsive cards.
+- Disabled front-page All Ports on phones, collapsed port names by default, and pinned only port numbers.
+
 ## [2026.06.29-docs] - 2026-06-29
 
 ### Changed

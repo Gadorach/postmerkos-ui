@@ -4,12 +4,21 @@ export function chunkPorts(items, size = 12) {
 	return groups;
 }
 
-export function splitPortBanks(portNumbers) {
+export function splitPortBanks(portNumbers, capabilities = {}, phone = false) {
 	const keys = [...portNumbers].map(Number).filter(Number.isFinite).sort((a, b) => a - b);
-	const sfpCount = keys.length > 10 ? 4 : 2;
-	const firstSfp = keys.length ? keys.length - sfpCount + 1 : 1;
+	const configuredUplinks = Number(capabilities?.uplink_ports ?? capabilities?.uplink?.count ?? 0);
+	const uplinkCount = configuredUplinks > 0 ? configuredUplinks : (keys.length > 10 ? 4 : 2);
+	const copperCount = Number(capabilities?.copper_ports ?? Math.max(0, keys.length - uplinkCount));
+	const copperPorts = keys.slice(0, copperCount);
+	const uplinkPorts = keys.slice(copperCount, copperCount + uplinkCount);
+	const copperBankSize = phone ? 6 : 12;
 	return {
-		ethernetBanks: chunkPorts(keys.filter(number => number < firstSfp), 12),
-		sfpPorts: keys.filter(number => number >= firstSfp),
+		copperBanks: chunkPorts(copperPorts, copperBankSize).map(bank => ({
+			ports: bank,
+			label: bank.length ? `${bank[0]}–${bank.at(-1)}` : '',
+		})),
+		uplinkPorts,
+		uplinkPairs: chunkPorts(uplinkPorts, 2),
+		uplinkLabel: capabilities?.uplink?.label ?? (Number(capabilities?.uplink?.max_speed_mbps) >= 10000 ? 'SFP+' : 'SFP'),
 	};
 }

@@ -21,6 +21,10 @@
       },
       "poe": {
         "power": 0.0
+      },
+      "capabilities": {
+        "media": "copper",
+        "max_speed_mbps": 1000
       }
     },
     "2": {
@@ -30,6 +34,10 @@
       },
       "poe": {
         "power": 6.699999809265137
+      },
+      "capabilities": {
+        "media": "copper",
+        "max_speed_mbps": 1000
       }
     },
     "3": {
@@ -39,6 +47,10 @@
       },
       "poe": {
         "power": 5.0
+      },
+      "capabilities": {
+        "media": "copper",
+        "max_speed_mbps": 1000
       }
     },
     "4": {
@@ -48,6 +60,10 @@
       },
       "poe": {
         "power": 0.0
+      },
+      "capabilities": {
+        "media": "copper",
+        "max_speed_mbps": 1000
       }
     },
     "5": {
@@ -57,6 +73,10 @@
       },
       "poe": {
         "power": 0.0
+      },
+      "capabilities": {
+        "media": "copper",
+        "max_speed_mbps": 1000
       }
     },
     "6": {
@@ -66,6 +86,10 @@
       },
       "poe": {
         "power": 0.0
+      },
+      "capabilities": {
+        "media": "copper",
+        "max_speed_mbps": 1000
       }
     },
     "7": {
@@ -75,6 +99,10 @@
       },
       "poe": {
         "power": 4.699999809265137
+      },
+      "capabilities": {
+        "media": "copper",
+        "max_speed_mbps": 1000
       }
     },
     "8": {
@@ -84,6 +112,10 @@
       },
       "poe": {
         "power": 0.0
+      },
+      "capabilities": {
+        "media": "copper",
+        "max_speed_mbps": 1000
       }
     },
     "9": {
@@ -93,6 +125,10 @@
       },
       "poe": {
         "power": 5.900000095367432
+      },
+      "capabilities": {
+        "media": "copper",
+        "max_speed_mbps": 1000
       }
     },
     "10": {
@@ -102,6 +138,10 @@
       },
       "poe": {
         "power": 0.0
+      },
+      "capabilities": {
+        "media": "copper",
+        "max_speed_mbps": 1000
       }
     },
     "11": {
@@ -111,6 +151,10 @@
       },
       "poe": {
         "power": 0.0
+      },
+      "capabilities": {
+        "media": "copper",
+        "max_speed_mbps": 1000
       }
     },
     "12": {
@@ -120,6 +164,10 @@
       },
       "poe": {
         "power": 0.0
+      },
+      "capabilities": {
+        "media": "copper",
+        "max_speed_mbps": 1000
       }
     },
     "13": {
@@ -129,6 +177,10 @@
       },
       "poe": {
         "power": 0.0
+      },
+      "capabilities": {
+        "media": "copper",
+        "max_speed_mbps": 1000
       }
     },
     "14": {
@@ -138,6 +190,10 @@
       },
       "poe": {
         "power": 8.899999618530273
+      },
+      "capabilities": {
+        "media": "copper",
+        "max_speed_mbps": 1000
       }
     },
     "15": {
@@ -147,6 +203,10 @@
       },
       "poe": {
         "power": 2.4000000953674316
+      },
+      "capabilities": {
+        "media": "copper",
+        "max_speed_mbps": 1000
       }
     },
     "16": {
@@ -156,6 +216,10 @@
       },
       "poe": {
         "power": 0.0
+      },
+      "capabilities": {
+        "media": "copper",
+        "max_speed_mbps": 1000
       }
     },
     "17": {
@@ -165,6 +229,10 @@
       },
       "poe": {
         "power": 7.0
+      },
+      "capabilities": {
+        "media": "copper",
+        "max_speed_mbps": 1000
       }
     },
     "18": {
@@ -174,6 +242,10 @@
       },
       "poe": {
         "power": 4.0
+      },
+      "capabilities": {
+        "media": "copper",
+        "max_speed_mbps": 1000
       }
     },
     "19": {
@@ -183,6 +255,10 @@
       },
       "poe": {
         "power": 6.099999904632568
+      },
+      "capabilities": {
+        "media": "copper",
+        "max_speed_mbps": 1000
       }
     },
     "20": {
@@ -192,6 +268,10 @@
       },
       "poe": {
         "power": 0.0
+      },
+      "capabilities": {
+        "media": "copper",
+        "max_speed_mbps": 1000
       }
     },
     "21": {
@@ -201,6 +281,10 @@
       },
       "poe": {
         "power": 0.0
+      },
+      "capabilities": {
+        "media": "copper",
+        "max_speed_mbps": 1000
       }
     },
     "22": {
@@ -210,6 +294,10 @@
       },
       "poe": {
         "power": 0.0
+      },
+      "capabilities": {
+        "media": "copper",
+        "max_speed_mbps": 1000
       }
     },
     "23": {
@@ -219,6 +307,10 @@
       },
       "poe": {
         "power": 0.0
+      },
+      "capabilities": {
+        "media": "copper",
+        "max_speed_mbps": 1000
       }
     },
     "24": {
@@ -228,6 +320,10 @@
       },
       "poe": {
         "power": 0.0
+      },
+      "capabilities": {
+        "media": "copper",
+        "max_speed_mbps": 1000
       }
     },
     "25": {
@@ -237,6 +333,10 @@
       },
       "poe": {
         "power": 2.0999999046325684
+      },
+      "capabilities": {
+        "media": "copper",
+        "max_speed_mbps": 1000
       }
     },
     "26": {
@@ -246,6 +346,10 @@
       },
       "poe": {
         "power": 0.0
+      },
+      "capabilities": {
+        "media": "copper",
+        "max_speed_mbps": 1000
       }
     },
     "27": {
@@ -255,6 +359,10 @@
       },
       "poe": {
         "power": 1.7000000476837158
+      },
+      "capabilities": {
+        "media": "copper",
+        "max_speed_mbps": 1000
       }
     },
     "28": {
@@ -264,6 +372,10 @@
       },
       "poe": {
         "power": 0.0
+      },
+      "capabilities": {
+        "media": "copper",
+        "max_speed_mbps": 1000
       }
     },
     "29": {
@@ -273,6 +385,10 @@
       },
       "poe": {
         "power": 0.0
+      },
+      "capabilities": {
+        "media": "copper",
+        "max_speed_mbps": 1000
       }
     },
     "30": {
@@ -282,6 +398,10 @@
       },
       "poe": {
         "power": 0.0
+      },
+      "capabilities": {
+        "media": "copper",
+        "max_speed_mbps": 1000
       }
     },
     "31": {
@@ -291,6 +411,10 @@
       },
       "poe": {
         "power": 2.9000000953674316
+      },
+      "capabilities": {
+        "media": "copper",
+        "max_speed_mbps": 1000
       }
     },
     "32": {
@@ -300,6 +424,10 @@
       },
       "poe": {
         "power": 0.0
+      },
+      "capabilities": {
+        "media": "copper",
+        "max_speed_mbps": 1000
       }
     },
     "33": {
@@ -309,6 +437,10 @@
       },
       "poe": {
         "power": 0.0
+      },
+      "capabilities": {
+        "media": "copper",
+        "max_speed_mbps": 1000
       }
     },
     "34": {
@@ -318,6 +450,10 @@
       },
       "poe": {
         "power": 0.0
+      },
+      "capabilities": {
+        "media": "copper",
+        "max_speed_mbps": 1000
       }
     },
     "35": {
@@ -327,6 +463,10 @@
       },
       "poe": {
         "power": 0.0
+      },
+      "capabilities": {
+        "media": "copper",
+        "max_speed_mbps": 1000
       }
     },
     "36": {
@@ -336,6 +476,10 @@
       },
       "poe": {
         "power": 0.0
+      },
+      "capabilities": {
+        "media": "copper",
+        "max_speed_mbps": 1000
       }
     },
     "37": {
@@ -345,6 +489,10 @@
       },
       "poe": {
         "power": 0.0
+      },
+      "capabilities": {
+        "media": "copper",
+        "max_speed_mbps": 1000
       }
     },
     "38": {
@@ -354,6 +502,10 @@
       },
       "poe": {
         "power": 0.0
+      },
+      "capabilities": {
+        "media": "copper",
+        "max_speed_mbps": 1000
       }
     },
     "39": {
@@ -363,6 +515,10 @@
       },
       "poe": {
         "power": 0.0
+      },
+      "capabilities": {
+        "media": "copper",
+        "max_speed_mbps": 1000
       }
     },
     "40": {
@@ -372,6 +528,10 @@
       },
       "poe": {
         "power": 0.0
+      },
+      "capabilities": {
+        "media": "copper",
+        "max_speed_mbps": 1000
       }
     },
     "41": {
@@ -381,6 +541,10 @@
       },
       "poe": {
         "power": 0.0
+      },
+      "capabilities": {
+        "media": "copper",
+        "max_speed_mbps": 1000
       }
     },
     "42": {
@@ -390,6 +554,10 @@
       },
       "poe": {
         "power": 0.0
+      },
+      "capabilities": {
+        "media": "copper",
+        "max_speed_mbps": 1000
       }
     },
     "43": {
@@ -399,6 +567,10 @@
       },
       "poe": {
         "power": 0.0
+      },
+      "capabilities": {
+        "media": "copper",
+        "max_speed_mbps": 1000
       }
     },
     "44": {
@@ -408,6 +580,10 @@
       },
       "poe": {
         "power": 0.0
+      },
+      "capabilities": {
+        "media": "copper",
+        "max_speed_mbps": 1000
       }
     },
     "45": {
@@ -417,6 +593,10 @@
       },
       "poe": {
         "power": 0.0
+      },
+      "capabilities": {
+        "media": "copper",
+        "max_speed_mbps": 1000
       }
     },
     "46": {
@@ -426,6 +606,10 @@
       },
       "poe": {
         "power": 5.800000190734863
+      },
+      "capabilities": {
+        "media": "copper",
+        "max_speed_mbps": 1000
       }
     },
     "47": {
@@ -435,6 +619,10 @@
       },
       "poe": {
         "power": 0.0
+      },
+      "capabilities": {
+        "media": "copper",
+        "max_speed_mbps": 1000
       }
     },
     "48": {
@@ -444,6 +632,10 @@
       },
       "poe": {
         "power": 0.0
+      },
+      "capabilities": {
+        "media": "copper",
+        "max_speed_mbps": 1000
       }
     },
     "49": {
@@ -453,6 +645,10 @@
       },
       "poe": {
         "power": -1.0
+      },
+      "capabilities": {
+        "media": "sfp",
+        "max_speed_mbps": 1000
       }
     },
     "50": {
@@ -462,6 +658,10 @@
       },
       "poe": {
         "power": -1.0
+      },
+      "capabilities": {
+        "media": "sfp",
+        "max_speed_mbps": 1000
       }
     },
     "51": {
@@ -471,6 +671,10 @@
       },
       "poe": {
         "power": -1.0
+      },
+      "capabilities": {
+        "media": "sfp",
+        "max_speed_mbps": 1000
       }
     },
     "52": {
@@ -480,6 +684,10 @@
       },
       "poe": {
         "power": -1.0
+      },
+      "capabilities": {
+        "media": "sfp",
+        "max_speed_mbps": 1000
       }
     }
   },
@@ -641,6 +849,31 @@
       "desired_running": true,
       "running": true,
       "in_sync": true
+    },
+    "mdns": {
+      "enabled": true,
+      "autostart": true,
+      "running": true,
+      "in_sync": true
     }
+  },
+  "capabilities": {
+    "port_count": 52,
+    "copper_ports": 48,
+    "uplink_ports": 4,
+    "uplink": {
+      "media": "sfp",
+      "label": "SFP",
+      "max_speed_mbps": 1000,
+      "count": 4
+    }
+  },
+  "identity": {
+    "configured_hostname": "postmerkos",
+    "effective_hostname": "postmerkos",
+    "advertised_name": "postmerkos.local",
+    "mdns_management_only": true,
+    "dhcp_hostname_registration_supported": false,
+    "conflict_state": "none"
   }
 }

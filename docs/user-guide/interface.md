@@ -1,18 +1,9 @@
 # Current interface behavior
 
-The browser uses configd as the sole configuration, validation, status, and authorization authority. Connection startup performs WebSocket negotiation with subprotocol `configd-ws`, protocol `hello`, account authentication, then role-filtered status/configuration subscriptions.
+The browser uses configd as the sole configuration, validation, status, and authorization authority. Startup performs `configd-ws` negotiation, protocol `hello`, account authentication/token restoration, then role-filtered subscriptions.
 
-## Main areas
+The eight-card header exposes identity/runtime summary and the Legend, Update, Configuration, and Logout controls. Configuration contains System, Display, Network/Identity, Ports, Switching, Accounts/SSH keys, Time, Services, Monitoring, and Terminal.
 
-- **Legend** — port-state and speed reference.
-- **Update** — configuration backup/restore and firmware management.
-- **Configuration** — port/switching, network, accounts, SSH keys, time, services, telemetry, terminal, and System Information.
-- **Logout** — revoke the current browser session.
+Selecting a graphical port opens a focused editor. Phone mode uses collapsible card sections; larger layouts use the detailed grid. Desktop/tablet All Ports provides filtering, row selection, cloning, optional names, and Apply/Discard behavior. Phone mode disables that wide table and uses port selection instead.
 
-Selecting a graphical port opens a focused editor. All Ports provides the complete editable table, filters, and cloning. Edits are kept separately from the last confirmed configuration; Apply sends only the delta, and Discard restores the last server-confirmed state.
-
-Controls are filtered by the authenticated capability set, but configd independently enforces every request.
-
-## Authentication and reconnect
-
-The login page distinguishes transport failure, handshake/subprotocol failure, protocol mismatch, authentication failure, and disconnected state. Token authentication may restore an allowed session, while revoked/expired sessions return to login. Pending requests are correlated by ID and rejected on disconnect instead of being silently retained.
+Controls are filtered by authenticated capabilities, but configd independently enforces every request. Pending operations are correlated by ID and rejected on disconnect. The login status separates transport, handshake, authentication, and reconnect failures in one bounded panel.

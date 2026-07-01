@@ -270,9 +270,9 @@ export default function Table({ ports, status, poe, updatePort, updatePortMulti,
 								{showName && <td className={diffStyle(port, 'name') ?? ''}>
 									<input
 										type="text"
-										value={p.name}
+										value={p.name ?? ''}
 										onClick={event => event.stopPropagation()}
-										onChange={(e) => updatePort(port, 'name', e.target.value)}
+										onInput={event => updatePort(port, 'name', event.currentTarget.value)}
 									/>
 								</td>}
 
@@ -327,14 +327,14 @@ export default function Table({ ports, status, poe, updatePort, updatePortMulti,
 									<td className={`section-vlan section-first ${vlansDiff(port) ?? ''}`}>
 										<input
 											value={vlansValue}
-											onChange={e => handleVlansChange(port, e.target.value, nativeValue)}
+											onInput={e => handleVlansChange(port, e.target.value, nativeValue)}
 										/>
 									</td>
 									<td className={`section-vlan ${diffStyle(port, "vlan.untagged_vid") ?? ''}`}>
 										<input className="vlan-input" type="number" min="1" max="4094"
 											disabled={isAccess}
 											value={nativeValue}
-											onChange={e => handleNativeChange(port, e.target.value, vlansValue)}
+											onInput={e => handleNativeChange(port, e.target.value, vlansValue)}
 										/>
 									</td>
 									<td className={`section-vlan ${diffStyle(port, "vlan.ingress_filter") ?? ''}`}>
@@ -360,13 +360,13 @@ export default function Table({ ports, status, poe, updatePort, updatePortMulti,
 									<td className={`section-stp ${diffStyle(port, "stp.priority") ?? ''}`}>
 										<input className="vlan-input" type="number" min="0" max="255"
 											value={p.stp?.priority}
-											onChange={e => updatePort(port, 'stp.priority', Number(e.target.value))}
+											onInput={e => updatePort(port, 'stp.priority', Number(e.target.value))}
 										/>
 									</td>
 									<td className={`section-stp ${diffStyle(port, "stp.cost") ?? ''}`}>
 										<input className="vlan-input" type="number" min="0"
 											value={p.stp?.cost}
-											onChange={e => updatePort(port, 'stp.cost', Number(e.target.value))}
+											onInput={e => updatePort(port, 'stp.cost', Number(e.target.value))}
 										/>
 									</td>
 									<td className={`section-stp ${diffStyle(port, "stp.edge") ?? ''}`}>

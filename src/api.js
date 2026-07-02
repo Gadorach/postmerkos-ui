@@ -1,8 +1,5 @@
 const WS_SCHEME = location.protocol === 'https:' ? 'wss' : 'ws';
-const WS_PORT = import.meta.env.VITE_CONFIGD_WS_PORT || '4001';
-const DEFAULT_URL = import.meta.env.DEV
-	? `${WS_SCHEME}://${location.host}/ws`
-	: `${WS_SCHEME}://${location.hostname}:${WS_PORT}`;
+const DEFAULT_URL = `${WS_SCHEME}://${location.host}/ws`;
 
 const sleep = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
 
@@ -36,6 +33,9 @@ export class ConfigdClient {
 
 	authenticate(username, password, remember) { return this.request('auth', { username, password, remember: !!remember }); }
 	resume(token) { return this.request('auth_token', { token }); }
+	certGet() { return this.request('cert_get'); }
+	certSet(cert, key) { return this.request('cert_set', { cert, key }); }
+	certDelete() { return this.request('cert_delete'); }
 
 	subscribe(type, callback) {
 		if (!this.listeners.has(type)) this.listeners.set(type, new Set());

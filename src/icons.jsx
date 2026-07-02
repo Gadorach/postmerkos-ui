@@ -9,6 +9,10 @@ export const InfoIcon = () => (
 	<svg {...base}><circle cx="12" cy="12" r="9" /><line x1="12" y1="11" x2="12" y2="16" /><line x1="12" y1="7.5" x2="12" y2="7.5" /></svg>
 );
 
+export const LockIcon = () => (
+	<svg {...base}><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
+);
+
 export const UpdateIcon = () => (
 	<svg {...base}><line x1="5" y1="4" x2="19" y2="4" /><polyline points="6 12 12 6 18 12" /><line x1="12" y1="6" x2="12" y2="20" /></svg>
 );

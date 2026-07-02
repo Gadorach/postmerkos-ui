@@ -9,7 +9,7 @@ import { useResponsiveMode } from './responsive';
 import {
 	CogIcon, UpdateIcon,
 	ChipIcon, MonitorIcon, GlobeIcon, GridIcon, ShareIcon, UsersIcon, ServerIcon, ActivityIcon, ClockIcon, TerminalIcon,
-	CheckIcon, PlusIcon, TrashIcon, DownloadIcon, UploadIcon, EyeIcon, RefreshIcon, DiscardIcon,
+	CheckIcon, PlusIcon, TrashIcon, DownloadIcon, UploadIcon, EyeIcon, RefreshIcon, DiscardIcon, LockIcon,
 } from './icons';
 import { buildIssueUrl } from './compat';
 import { TIMEZONE_GROUPS as FALLBACK_TIMEZONE_GROUPS, applyTimezonePolicy, findTimezone } from './timezones';
@@ -485,11 +485,74 @@ export function PortEditor({ client, selectedPort, onSelect, onClose, config, st
 	return <dialog className="management-dialog port-editor-dialog" ref={ref} onClose={onClose}><div className="tool-dialog wide-dialog"><div className="dialog-topbar"><DialogHeader title={`Port ${selectedPort}`} close={onClose} /><div className="port-navigation"><button className="btn-secondary" disabled={index <= 0} onClick={() => move(-1)}>Previous</button><button className="btn-secondary" onClick={() => setClone(value => !value)}>Clone configuration</button><button className="btn-secondary" disabled={index >= numbers.length - 1} onClick={() => move(1)}>Next</button></div></div><div className="dialog-body">{clone && <ClonePane client={client} config={config} sourcePort={selectedPort} />}{phone ? <MobilePortEditor port={String(selectedPort)} config={config} status={status} poe={poe} updatePort={updatePort} updatePortMulti={updatePortMulti} diff={diff} /> : <Table ports={{ [selectedPort]: config.ports[selectedPort] }} status={status} poe={poe} updatePort={updatePort} updatePortMulti={updatePortMulti} diff={diff} selectedPort={selectedPort} showName />}</div></div></dialog>;
 }
 
+function WebTlsPane({ client }) {
+	const [cert, setCert] = useState(null);
+	const [certFile, setCertFile] = useState(null);
+	const [keyFile, setKeyFile] = useState(null);
+	const [notice, setNotice] = useState(''); const [error, setError] = useState(''); const [busy, setBusy] = useState(false);
+	const load = async () => { try { const response = await client.certGet(); setCert(response.data ?? null); } catch (failure) { setError(failure.message); } };
+	useEffect(() => { load(); }, []);
+	// After a cert change pmweb restarts (~0.5 s) and the socket drops. Give it a
+	// grace period: if the client has not reconnected — e.g. the browser will not
+	// trust a freshly-generated self-signed cert without a new visit — reload so the
+	// user gets the certificate prompt; otherwise just refresh the displayed cert.
+	const scheduleReconnectCheck = () => setTimeout(() => {
+		if (!client.socket || client.socket.readyState !== WebSocket.OPEN) location.reload();
+		else load();
+	}, 6000);
+	const upload = async event => {
+		event.preventDefault(); setError(''); setNotice('');
+		if (!certFile || !keyFile) { setError('Select both a certificate and a private-key file.'); return; }
+		setBusy(true);
+		try {
+			const [certPem, keyPem] = await Promise.all([certFile.text(), keyFile.text()]);
+			await client.certSet(certPem, keyPem);
+			setNotice('Certificate installed. The secure connection will reconnect. If your browser does not trust the new certificate, the page will reload so you can accept it.');
+			setCertFile(null); setKeyFile(null);
+			scheduleReconnectCheck();
+		} catch (failure) { setError(failure.message); } finally { setBusy(false); }
+	};
+	const revert = async () => {
+		if (!globalThis.confirm('Replace the current certificate with a new self-signed one?')) return;
+		setError(''); setNotice(''); setBusy(true);
+		try { await client.certDelete(); setNotice('Reverted to a self-signed certificate. If the connection does not resume, the page will reload so your browser can re-accept it.'); scheduleReconnectCheck(); }
+		catch (failure) { setError(failure.message); } finally { setBusy(false); }
+	};
+	return <div className="tab-pane web-tls-pane">
+		<section>
+			<h3>Web / TLS certificate</h3>
+			<p>The management interface is served over HTTPS and the live API over <code>wss</code>. A per-device self-signed certificate is used by default — upload your own certificate to remove browser warnings.</p>
+			{cert?.present ? <dl className="system-grid">
+				<div><dt>Subject</dt><dd>{cert.subject || '—'}</dd></div>
+				<div><dt>Issuer</dt><dd>{cert.issuer || '—'}</dd></div>
+				<div><dt>Type</dt><dd>{cert.self_signed ? 'Self-signed' : 'CA-issued'}</dd></div>
+				<div><dt>Valid from</dt><dd>{cert.not_before || '—'}</dd></div>
+				<div><dt>Valid until</dt><dd>{cert.not_after || '—'}</dd></div>
+				<div><dt>SHA-256</dt><dd><code>{cert.fingerprint_sha256 || '—'}</code></dd></div>
+			</dl> : <p className="warning">No certificate is currently installed.</p>}
+				{cert && !cert.valid_pair && <p className="error">This certificate is not active{cert.error ? `: ${cert.error}` : ''}. The interface is served over plain HTTP until a valid certificate and matching private key are installed.</p>}
+		</section>
+		<section><form onSubmit={upload}>
+			<h3>Upload certificate</h3>
+			<label>Certificate (PEM)<input type="file" accept=".pem,.crt,.cer" onChange={event => setCertFile(event.currentTarget.files?.[0] ?? null)} /></label>
+			<label>Private key (PEM)<input type="file" accept=".pem,.key" onChange={event => setKeyFile(event.currentTarget.files?.[0] ?? null)} /></label>
+			<p className="notice">Provide a PEM X.509 certificate and its matching unencrypted private key.</p>
+			<button className="btn-primary" disabled={busy || !certFile || !keyFile}><UploadIcon /> Upload &amp; apply</button>
+		</form></section>
+		<section>
+			<h3>Reset</h3>
+			<button className="btn-danger" disabled={busy} onClick={revert}><RefreshIcon /> Revert to self-signed</button>
+		</section>
+		{notice && <div className="notice">{notice}</div>}{error && <div className="error">{error}</div>}
+	</div>;
+}
+
 export function ConfigurationMenu({ client, auth, config, status, updateRoot, updatePort, updatePortMulti, diff, poe, hasCapability, frontTable, onFrontTableChange, portNamesExpanded, onPortNamesExpandedChange, selectedPort, onSelectPort, onApply, onDiscard, applying, connected }) {
 	const { phone } = useResponsiveMode();
 	const available = useMemo(() => [
 		{ id: 'system', label: 'System', icon: <ChipIcon /> }, { id: 'display', label: 'Display', icon: <MonitorIcon /> }, { id: 'network', label: 'Network', icon: <GlobeIcon /> }, { id: 'ports', label: 'Ports', icon: <GridIcon /> }, { id: 'switching', label: 'Switching', icon: <ShareIcon /> },
 		{ id: 'accounts', label: 'Accounts', icon: <UsersIcon /> }, { id: 'services', label: 'Services', icon: <ServerIcon /> }, { id: 'monitoring', label: 'Monitoring', icon: <ActivityIcon /> }, { id: 'time', label: 'Time', icon: <ClockIcon /> },
+		...(hasCapability('tls.manage') ? [{ id: 'tls', label: 'Web / TLS', icon: <LockIcon /> }] : []),
 		...(hasCapability('terminal.exec') ? [{ id: 'terminal', label: 'Terminal', icon: <TerminalIcon /> }] : []),
 	], [hasCapability]);
 	const [tab, setTab] = useState('system');
@@ -513,6 +576,7 @@ export function ConfigurationMenu({ client, auth, config, status, updateRoot, up
 				? <MonitoringPane config={config} updateRoot={updateRoot} />
 				: <div className="warning">Monitoring configuration requires write access.</div>)}
 			{tab === 'time' && (hasCapability('services.manage') ? <TimePane client={client} /> : <SystemPane client={client} status={status} />)}
+			{tab === 'tls' && (hasCapability('tls.manage') ? <WebTlsPane client={client} /> : <div className="warning">TLS configuration requires administrator access.</div>)}
 			{tab === 'terminal' && <TerminalPane client={client} />}
 			{footer}
 		</DialogShell>}

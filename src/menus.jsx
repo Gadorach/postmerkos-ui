@@ -6,6 +6,7 @@ import AllPortsPanel from './all-ports';
 import MobilePortEditor from './mobile-port-editor';
 import ClonePane from './clone-pane';
 import { useResponsiveMode } from './responsive';
+import GraphsPane from './graphs';
 import {
 	CogIcon, UpdateIcon,
 	ChipIcon, MonitorIcon, GlobeIcon, GridIcon, ShareIcon, UsersIcon, ServerIcon, ActivityIcon, ClockIcon, TerminalIcon,
@@ -232,6 +233,14 @@ function FirmwarePane({ client, connected, config, compatibility }) {
 		<p className="warning">When flashing begins, the interface will disconnect. On hardware-verified models, the chassis status LED alternates green and orange faster as progress advances, pulses orange on failure or rollback, and remains green after verification. Port LEDs are used only as a fallback. Serial output and the post-reboot update log remain available.</p>
 		{error && <div className="error">{error}</div>}
 	</div>;
+}
+
+// Live telemetry graphs. Full-width dialog (own tool-row button, not a
+// Configuration sub-tab) so the per-port grid gets the whole page width.
+export function GraphsMenu({ client, config }) {
+	return <ModalButton label={<ActivityIcon />} className="icon-button" dialogClassName="dialog-fullwidth" title="Live graphs: temperature, load, per-port traffic and PoE">
+		{({ close }) => <DialogShell className="graphs-shell" title="Live graphs" close={close}><GraphsPane client={client} config={config} /></DialogShell>}
+	</ModalButton>;
 }
 
 export function UpdateMenu(props) {

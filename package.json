@@ -22,7 +22,8 @@
     "ws": "^8.19.0"
   },
   "dependencies": {
-    "preact": "^10.26.2"
+    "preact": "^10.26.2",
+    "uplot": "^1.6.32"
   },
   "engines": {
     "node": ">=20"

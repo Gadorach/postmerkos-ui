@@ -149,6 +149,11 @@ export class ConfigdClient {
 		return this.request('firmware_begin_flash', { token }, { timeout: 15000 });
 	}
 
+	// Live telemetry graph stream: subscribe to start the 2 s server push (frames
+	// arrive as unsolicited `telemetry` messages via subscribe('telemetry', cb)).
+	telemetrySubscribe() { return this.request('telemetry_subscribe'); }
+	telemetryUnsubscribe() { return this.request('telemetry_unsubscribe').catch(() => {}); }
+
 	#open() {
 		if (this.stopped) return;
 		this.onConnectionState?.(`Connecting to ${this.url}`);

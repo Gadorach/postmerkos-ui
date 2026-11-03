@@ -110,7 +110,7 @@ export default function Table({ ports, status, poe, updatePort, updatePortMulti,
 	});
 	const [filters, setFilters] = useState(DEFAULT_FILTERS);
 	const [sort, setSort] = useState({ column: null, direction: 'asc' });
-
+	const [vlanDrafts, setVlanDrafts] = useState({});
 	const toggle = (key) => setSections(prev => ({ ...prev, [key]: !prev[key] }));
 
 	const toggleSort = (col) => {
@@ -326,8 +326,26 @@ export default function Table({ ports, status, poe, updatePort, updatePortMulti,
 								{sections.vlan ? (<>
 									<td className={`section-vlan section-first ${vlansDiff(port) ?? ''}`}>
 										<input
-											value={vlansValue}
-											onChange={e => handleVlansChange(port, e.target.value, nativeValue)}
+											type="text"
+											value={vlanDrafts[port] ?? vlansValue}
+											onClick={e => e.stopPropagation()}
+											onChange={e => {
+												const value = e.currentTarget.value;
+
+												setVlanDrafts(prev => ({
+													...prev,
+													[port]: value,
+												}));
+
+												handleVlansChange(port, value, nativeValue);
+											}}
+											onBlur={() => {
+												setVlanDrafts(prev => {
+													const next = { ...prev };
+													delete next[port];
+													return next;
+												});
+											}}
 										/>
 									</td>
 									<td className={`section-vlan ${diffStyle(port, "vlan.untagged_vid") ?? ''}`}>

@@ -110,7 +110,7 @@ export default function Table({ ports, status, poe, updatePort, updatePortMulti,
 	});
 	const [filters, setFilters] = useState(DEFAULT_FILTERS);
 	const [sort, setSort] = useState({ column: null, direction: 'asc' });
-
+	const [vlanDrafts, setVlanDrafts] = useState({});
 	const toggle = (key) => setSections(prev => ({ ...prev, [key]: !prev[key] }));
 
 	const toggleSort = (col) => {
@@ -272,7 +272,7 @@ export default function Table({ ports, status, poe, updatePort, updatePortMulti,
 										type="text"
 										value={p.name}
 										onClick={event => event.stopPropagation()}
-										onChange={(e) => updatePort(port, 'name', e.target.value)}
+										onInput={(e) => updatePort(port, 'name', e.target.value)}
 									/>
 								</td>}
 
@@ -326,15 +326,33 @@ export default function Table({ ports, status, poe, updatePort, updatePortMulti,
 								{sections.vlan ? (<>
 									<td className={`section-vlan section-first ${vlansDiff(port) ?? ''}`}>
 										<input
-											value={vlansValue}
-											onChange={e => handleVlansChange(port, e.target.value, nativeValue)}
+											type="text"
+											value={vlanDrafts[port] ?? vlansValue}
+											onClick={e => e.stopPropagation()}
+											onInput={e => {
+												const value = e.currentTarget.value;
+
+												setVlanDrafts(prev => ({
+													...prev,
+													[port]: value,
+												}));
+
+												handleVlansChange(port, value, nativeValue);
+											}}
+											onBlur={() => {
+												setVlanDrafts(prev => {
+													const next = { ...prev };
+													delete next[port];
+													return next;
+												});
+											}}
 										/>
 									</td>
 									<td className={`section-vlan ${diffStyle(port, "vlan.untagged_vid") ?? ''}`}>
 										<input className="vlan-input" type="number" min="1" max="4094"
 											disabled={isAccess}
 											value={nativeValue}
-											onChange={e => handleNativeChange(port, e.target.value, vlansValue)}
+											onInput={e => handleNativeChange(port, e.target.value, vlansValue)}
 										/>
 									</td>
 									<td className={`section-vlan ${diffStyle(port, "vlan.ingress_filter") ?? ''}`}>
@@ -360,13 +378,13 @@ export default function Table({ ports, status, poe, updatePort, updatePortMulti,
 									<td className={`section-stp ${diffStyle(port, "stp.priority") ?? ''}`}>
 										<input className="vlan-input" type="number" min="0" max="255"
 											value={p.stp?.priority}
-											onChange={e => updatePort(port, 'stp.priority', Number(e.target.value))}
+											onInput={e => updatePort(port, 'stp.priority', Number(e.target.value))}
 										/>
 									</td>
 									<td className={`section-stp ${diffStyle(port, "stp.cost") ?? ''}`}>
 										<input className="vlan-input" type="number" min="0"
 											value={p.stp?.cost}
-											onChange={e => updatePort(port, 'stp.cost', Number(e.target.value))}
+											onInput={e => updatePort(port, 'stp.cost', Number(e.target.value))}
 										/>
 									</td>
 									<td className={`section-stp ${diffStyle(port, "stp.edge") ?? ''}`}>
